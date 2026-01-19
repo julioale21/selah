@@ -57,9 +57,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: SelahSpacing.md),
               OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Navigate to topics
-                },
+                onPressed: () => context.push('/topics'),
                 icon: const Icon(Icons.list),
                 label: const Text('Mis Temas'),
               ),

@@ -17,6 +17,16 @@ import 'features/categories/domain/usecases/seed_default_categories.dart';
 import 'features/categories/domain/usecases/update_category.dart';
 import 'features/categories/presentation/cubit/categories_cubit.dart';
 
+// Prayer Topics feature
+import 'features/prayer_topics/data/datasources/prayer_topic_local_datasource.dart';
+import 'features/prayer_topics/data/repositories/prayer_topic_repository_impl.dart';
+import 'features/prayer_topics/domain/repositories/prayer_topic_repository.dart';
+import 'features/prayer_topics/domain/usecases/add_topic.dart';
+import 'features/prayer_topics/domain/usecases/delete_topic.dart';
+import 'features/prayer_topics/domain/usecases/get_topics.dart';
+import 'features/prayer_topics/domain/usecases/update_topic.dart';
+import 'features/prayer_topics/presentation/cubit/topics_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> init() async {
@@ -62,7 +72,30 @@ Future<void> init() async {
       ));
 
   //! Features - Prayer Topics
-  // TODO: Register prayer topics dependencies
+  // Data sources
+  sl.registerLazySingleton<PrayerTopicLocalDataSource>(
+    () => PrayerTopicLocalDataSourceImpl(databaseHelper: sl()),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<PrayerTopicRepository>(
+    () => PrayerTopicRepositoryImpl(localDataSource: sl()),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetTopics(sl()));
+  sl.registerLazySingleton(() => AddTopic(sl()));
+  sl.registerLazySingleton(() => UpdateTopic(sl()));
+  sl.registerLazySingleton(() => DeleteTopic(sl()));
+
+  // Cubit
+  sl.registerFactory(() => TopicsCubit(
+        getTopics: sl(),
+        addTopic: sl(),
+        updateTopic: sl(),
+        deleteTopic: sl(),
+        userService: sl(),
+      ));
 
   //! Features - Prayer Session
   // TODO: Register prayer session dependencies

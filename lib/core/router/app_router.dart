@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/categories/presentation/cubit/categories_cubit.dart';
 import '../../features/categories/presentation/screens/categories_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/prayer_topics/presentation/cubit/topics_cubit.dart';
+import '../../features/prayer_topics/presentation/screens/topics_screen.dart';
 import '../../injection_container.dart';
 
 class AppRouter {
@@ -21,6 +23,17 @@ class AppRouter {
         builder: (context, state) => BlocProvider(
           create: (_) => sl<CategoriesCubit>(),
           child: const CategoriesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/topics',
+        name: 'topics',
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => sl<TopicsCubit>()),
+            BlocProvider(create: (_) => sl<CategoriesCubit>()),
+          ],
+          child: const TopicsScreen(),
         ),
       ),
     ],
