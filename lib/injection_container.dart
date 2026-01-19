@@ -3,6 +3,7 @@ import 'package:selah_ui_kit/selah_ui_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/database/database_helper.dart';
+import 'core/services/user_service.dart';
 
 final sl = GetIt.instance;
 
@@ -13,6 +14,7 @@ Future<void> init() async {
 
   //! Core
   sl.registerLazySingleton(() => DatabaseHelper());
+  sl.registerLazySingleton(() => UserService(sl()));
 
   //! Theme
   sl.registerFactory(() => ThemeCubit(sl()));
