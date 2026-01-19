@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'selah.db';
-  static const int _databaseVersion = 2;
+  static const int _databaseVersion = 3;
 
   Database? _database;
 
@@ -151,8 +151,10 @@ class DatabaseHelper {
         topic_ids TEXT NOT NULL,
         is_completed INTEGER DEFAULT 0,
         completed_at TEXT,
+        session_id TEXT,
         notes TEXT,
-        UNIQUE(user_id, date)
+        UNIQUE(user_id, date),
+        FOREIGN KEY (session_id) REFERENCES prayer_sessions(id)
       )
     ''');
 
@@ -198,6 +200,11 @@ class DatabaseHelper {
 
       // Agregar category_id a prayer_topics (mantener category para migración)
       await db.execute('ALTER TABLE prayer_topics ADD COLUMN category_id TEXT REFERENCES categories(id)');
+    }
+
+    if (oldVersion < 3) {
+      // Agregar session_id a daily_plans
+      await db.execute('ALTER TABLE daily_plans ADD COLUMN session_id TEXT REFERENCES prayer_sessions(id)');
     }
   }
 
