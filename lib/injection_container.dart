@@ -27,6 +27,10 @@ import 'features/prayer_topics/domain/usecases/get_topics.dart';
 import 'features/prayer_topics/domain/usecases/update_topic.dart';
 import 'features/prayer_topics/presentation/cubit/topics_cubit.dart';
 
+// Prayer Session feature
+import 'features/prayer_session/presentation/cubit/prayer_session_cubit.dart';
+import 'features/prayer_session/presentation/cubit/session_timer_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> init() async {
@@ -98,7 +102,9 @@ Future<void> init() async {
       ));
 
   //! Features - Prayer Session
-  // TODO: Register prayer session dependencies
+  // Cubits
+  sl.registerFactory(() => SessionTimerCubit());
+  sl.registerFactory(() => PrayerSessionCubit(userService: sl()));
 
   //! Features - Planner
   // TODO: Register planner dependencies

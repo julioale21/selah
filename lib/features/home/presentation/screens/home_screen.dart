@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
+import '../../../../core/router/selah_routes.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -49,21 +51,19 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: SelahSpacing.xxl),
               ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: Navigate to prayer session
-                },
+                onPressed: () => context.push(SelahRoutes.session),
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('Iniciar Oración'),
               ),
               const SizedBox(height: SelahSpacing.md),
               OutlinedButton.icon(
-                onPressed: () => context.push('/topics'),
+                onPressed: () => context.push(SelahRoutes.topics),
                 icon: const Icon(Icons.list),
                 label: const Text('Mis Temas'),
               ),
               const SizedBox(height: SelahSpacing.md),
               TextButton.icon(
-                onPressed: () => context.push('/categories'),
+                onPressed: () => context.push(SelahRoutes.categories),
                 icon: const Icon(Icons.category),
                 label: const Text('Categorías'),
               ),
