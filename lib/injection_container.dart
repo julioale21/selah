@@ -131,6 +131,7 @@ Future<void> init() async {
   sl.registerFactory(() => PrayerSessionCubit(
         userService: sl(),
         verseRepository: sl(),
+        settingsRepository: sl(),
       ));
 
   //! Features - Planner

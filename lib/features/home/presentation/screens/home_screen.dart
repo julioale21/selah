@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
@@ -16,14 +15,6 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Selah'),
         actions: [
-          IconButton(
-            icon: Icon(
-              context.watch<ThemeCubit>().isDarkMode
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            onPressed: () => context.read<ThemeCubit>().toggleTheme(),
-          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () => context.push(SelahRoutes.settings),
