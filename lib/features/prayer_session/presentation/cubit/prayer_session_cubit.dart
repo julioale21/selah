@@ -7,18 +7,21 @@ import '../../../prayer_topics/domain/entities/prayer_topic.dart';
 import '../../../settings/domain/repositories/settings_repository.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/entities/prayer_session.dart';
+import '../../domain/repositories/prayer_session_repository.dart';
 import 'prayer_session_state.dart';
 
 class PrayerSessionCubit extends Cubit<PrayerSessionState> {
   final UserService userService;
   final VerseRepository verseRepository;
   final SettingsRepository settingsRepository;
+  final PrayerSessionRepository sessionRepository;
   static const _uuid = Uuid();
 
   PrayerSessionCubit({
     required this.userService,
     required this.verseRepository,
     required this.settingsRepository,
+    required this.sessionRepository,
   }) : super(const PrayerSessionState());
 
   String get _userId => userService.currentUserId;
@@ -169,7 +172,17 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
       durationSeconds: elapsedSeconds,
     );
 
-    // TODO: Save session and entries to repository
+    try {
+      // Save session to database
+      await sessionRepository.saveSession(finishedSession);
+
+      // Save journal entries to database
+      if (state.entries.isNotEmpty) {
+        await sessionRepository.saveJournalEntries(state.entries);
+      }
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Error al guardar sesión: $e'));
+    }
 
     emit(state.copyWith(
       session: finishedSession,

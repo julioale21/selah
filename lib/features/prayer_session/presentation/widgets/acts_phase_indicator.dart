@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 import '../cubit/prayer_session_state.dart';
 
@@ -15,6 +14,9 @@ class ACTSPhaseIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     final phases = [
       SessionPhase.adoration,
       SessionPhase.confession,
@@ -23,9 +25,14 @@ class ACTSPhaseIndicator extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFAFAFA),
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+          ),
+        ),
       ),
       child: Row(
         children: phases.asMap().entries.map((entry) {
@@ -42,22 +49,36 @@ class ACTSPhaseIndicator extends StatelessWidget {
                 Expanded(
                   child: GestureDetector(
                     onTap: () => onPhaseTap(phase),
+                    behavior: HitTestBehavior.opaque,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 36,
-                          height: 36,
+                        // Phase circle
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: isActive ? 42 : 36,
+                          height: isActive ? 42 : 36,
                           decoration: BoxDecoration(
-                            color: isActive || isPast
-                                ? color
-                                : color.withValues(alpha: 0.3),
-                            shape: BoxShape.circle,
-                            border: isActive
-                                ? Border.all(
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                    width: 2,
+                            gradient: (isActive || isPast)
+                                ? LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      color,
+                                      color.withValues(alpha: 0.7),
+                                    ],
                                   )
+                                : null,
+                            color: (isActive || isPast) ? null : (isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.08)),
+                            shape: BoxShape.circle,
+                            boxShadow: isActive
+                                ? [
+                                    BoxShadow(
+                                      color: color.withValues(alpha: 0.4),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
                                 : null,
                           ),
                           child: Center(
@@ -69,23 +90,26 @@ class ACTSPhaseIndicator extends StatelessWidget {
                                   )
                                 : Text(
                                     phase.name[0].toUpperCase(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: (isActive || isPast)
+                                          ? Colors.white
+                                          : (isDark ? Colors.white38 : Colors.black38),
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                                      fontSize: isActive ? 16 : 14,
                                     ),
                                   ),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
+                        // Phase label
                         Text(
                           _getPhaseLabel(phase),
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                            fontSize: 11,
+                            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                             color: isActive
                                 ? color
-                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                                : (isDark ? Colors.white54 : Colors.black45),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -93,14 +117,19 @@ class ACTSPhaseIndicator extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Connector line
                 if (!isLast)
-                  Container(
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     height: 2,
-                    width: 16,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    color: isPast
-                        ? color
-                        : Theme.of(context).colorScheme.outlineVariant,
+                    width: 20,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: isPast
+                          ? color.withValues(alpha: 0.5)
+                          : (isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.08)),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
                   ),
               ],
             ),
@@ -113,15 +142,15 @@ class ACTSPhaseIndicator extends StatelessWidget {
   Color _getPhaseColor(SessionPhase phase) {
     switch (phase) {
       case SessionPhase.adoration:
-        return SelahColors.adoration;
+        return const Color(0xFFE8A838); // Warm gold
       case SessionPhase.confession:
-        return SelahColors.confession;
+        return const Color(0xFF9B7FC7); // Soft purple
       case SessionPhase.thanksgiving:
-        return SelahColors.thanksgiving;
+        return const Color(0xFF5BAE7D); // Fresh green
       case SessionPhase.supplication:
-        return SelahColors.supplication;
+        return const Color(0xFF5B9FD4); // Calm blue
       default:
-        return SelahColors.primary;
+        return const Color(0xFF5B9FD4);
     }
   }
 

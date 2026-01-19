@@ -16,24 +16,63 @@ class PrayerPromptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getPhaseColor(phase);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accentColor = _getPhaseAccentColor(phase);
     final prompts = _getPrompts(phase);
 
-    return Card(
-      color: color.withValues(alpha: 0.1),
-      child: Padding(
-        padding: const EdgeInsets.all(SelahSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                ),
+              ),
+            ),
+            child: Row(
               children: [
+                // Phase icon
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accentColor,
+                        accentColor.withValues(alpha: 0.7),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: Text(
@@ -41,79 +80,101 @@ class PrayerPromptCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        fontSize: 20,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: SelahSpacing.md),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         _getPhaseTitle(phase),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: color,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
                       ),
                       if (topic != null)
                         Text(
-                          'Tema: ${topic!.title}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
+                          topic!.title,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isDark ? Colors.white54 : Colors.black45,
+                          ),
                         ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: SelahSpacing.lg),
-            Text(
-              'Sugerencias:',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+          ),
+
+          // Prompts
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sugerencias',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: isDark ? Colors.white38 : Colors.black38,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
-            ),
-            const SizedBox(height: SelahSpacing.sm),
-            ...prompts.map((prompt) => Padding(
-                  padding: const EdgeInsets.only(bottom: SelahSpacing.xs),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        size: 16,
-                        color: color,
-                      ),
-                      const SizedBox(width: SelahSpacing.xs),
-                      Expanded(
-                        child: Text(
-                          prompt,
-                          style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                ...prompts.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final prompt = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          margin: const EdgeInsets.only(top: 6),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.6 - (index * 0.1)),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                )),
-          ],
-        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            prompt,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: isDark ? Colors.white70 : Colors.black87,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Color _getPhaseColor(SessionPhase phase) {
+  Color _getPhaseAccentColor(SessionPhase phase) {
     switch (phase) {
       case SessionPhase.adoration:
-        return SelahColors.adoration;
+        return const Color(0xFFE8A838); // Warm gold
       case SessionPhase.confession:
-        return SelahColors.confession;
+        return const Color(0xFF9B7FC7); // Soft purple
       case SessionPhase.thanksgiving:
-        return SelahColors.thanksgiving;
+        return const Color(0xFF5BAE7D); // Fresh green
       case SessionPhase.supplication:
-        return SelahColors.supplication;
+        return const Color(0xFF5B9FD4); // Calm blue
       default:
         return SelahColors.primary;
     }

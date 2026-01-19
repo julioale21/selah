@@ -446,43 +446,115 @@ class _TopicNavigator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final topic = topics[currentIndex];
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(SelahSpacing.sm),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: currentIndex > 0 ? onPrevious : null,
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  Text(
-                    'Orando por:',
-                    style: Theme.of(context).textTheme.labelSmall,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _NavButton(
+            icon: Icons.chevron_left_rounded,
+            onTap: currentIndex > 0 ? onPrevious : null,
+            isDark: isDark,
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  'Orando por',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: isDark ? Colors.white38 : Colors.black38,
+                    letterSpacing: 0.3,
                   ),
-                  Text(
-                    topic.title,
-                    style: Theme.of(context).textTheme.titleSmall,
-                    textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  topic.title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
-                  Text(
-                    '${currentIndex + 1} de ${topics.length}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                  ),
-                ],
-              ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(topics.length, (i) {
+                    return Container(
+                      width: i == currentIndex ? 16 : 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: i == currentIndex
+                            ? theme.colorScheme.primary
+                            : (isDark ? Colors.white12 : Colors.black12),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  }),
+                ),
+              ],
             ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: currentIndex < topics.length - 1 ? onNext : null,
-            ),
-          ],
+          ),
+          _NavButton(
+            icon: Icons.chevron_right_rounded,
+            onTap: currentIndex < topics.length - 1 ? onNext : null,
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  final bool isDark;
+
+  const _NavButton({
+    required this.icon,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onTap != null;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isEnabled
+              ? (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          size: 24,
+          color: isEnabled
+              ? (isDark ? Colors.white70 : Colors.black54)
+              : (isDark ? Colors.white12 : Colors.black12),
         ),
       ),
     );
@@ -668,13 +740,13 @@ class _SessionVerseCard extends StatelessWidget {
   Color _getPhaseColor() {
     switch (phase) {
       case SessionPhase.adoration:
-        return SelahColors.adoration;
+        return const Color(0xFFE8A838); // Warm gold
       case SessionPhase.confession:
-        return SelahColors.confession;
+        return const Color(0xFF9B7FC7); // Soft purple
       case SessionPhase.thanksgiving:
-        return SelahColors.thanksgiving;
+        return const Color(0xFF5BAE7D); // Fresh green
       case SessionPhase.supplication:
-        return SelahColors.supplication;
+        return const Color(0xFF5B9FD4); // Calm blue
       default:
         return SelahColors.primary;
     }
@@ -682,76 +754,103 @@ class _SessionVerseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final phaseColor = _getPhaseColor();
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(SelahSpacing.radiusMd),
-        side: BorderSide(color: phaseColor.withValues(alpha: 0.3), width: 1),
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: phaseColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(SelahSpacing.radiusMd),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              phaseColor.withValues(alpha: 0.1),
-              phaseColor.withValues(alpha: 0.05),
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(SelahSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.menu_book,
-                    size: 18,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: phaseColor.withValues(alpha: isDark ? 0.15 : 0.08),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.auto_stories_rounded,
+                  size: 18,
+                  color: phaseColor,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Versículo para meditar',
+                  style: theme.textTheme.labelMedium?.copyWith(
                     color: phaseColor,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: SelahSpacing.xs),
-                  Text(
-                    'Versículo para meditar',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: phaseColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: Icon(Icons.refresh, size: 18, color: phaseColor),
-                    onPressed: onRefresh,
-                    tooltip: 'Otro versículo',
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: SelahSpacing.sm),
-              Text(
-                '"${verse.textEs}"',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      height: 1.5,
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: onRefresh,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: phaseColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-              ),
-              const SizedBox(height: SelahSpacing.xs),
-              Text(
-                verse.displayReference,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    child: Icon(
+                      Icons.refresh_rounded,
+                      size: 16,
                       color: phaseColor,
-                      fontWeight: FontWeight.bold,
                     ),
-              ),
-            ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '"${verse.textEs}"',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    height: 1.6,
+                    color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: phaseColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    verse.displayReference,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: phaseColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
