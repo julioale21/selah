@@ -62,21 +62,26 @@ class HomeScreen extends StatelessWidget {
                 label: const Text('Planificador'),
               ),
               const SizedBox(height: SelahSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: SelahSpacing.sm,
+                runSpacing: SelahSpacing.xs,
                 children: [
                   TextButton.icon(
                     onPressed: () => context.push(SelahRoutes.topics),
                     icon: const Icon(Icons.list),
                     label: const Text('Temas'),
                   ),
-                  const SizedBox(width: SelahSpacing.sm),
                   TextButton.icon(
                     onPressed: () => context.push(SelahRoutes.verses),
                     icon: const Icon(Icons.menu_book),
                     label: const Text('Versículos'),
                   ),
-                  const SizedBox(width: SelahSpacing.sm),
+                  TextButton.icon(
+                    onPressed: () => context.push(SelahRoutes.journal),
+                    icon: const Icon(Icons.book),
+                    label: const Text('Diario'),
+                  ),
                   TextButton.icon(
                     onPressed: () => context.push(SelahRoutes.categories),
                     icon: const Icon(Icons.category),
