@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../bible/domain/entities/verse.dart';
 import '../../../prayer_topics/domain/entities/prayer_topic.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/entities/prayer_session.dart';
@@ -15,6 +16,7 @@ class PrayerSessionState extends Equatable {
   final String? currentNote;
   final bool isLoading;
   final String? errorMessage;
+  final Verse? currentVerse;
 
   const PrayerSessionState({
     this.phase = SessionPhase.setup,
@@ -25,6 +27,7 @@ class PrayerSessionState extends Equatable {
     this.currentNote,
     this.isLoading = false,
     this.errorMessage,
+    this.currentVerse,
   });
 
   PrayerTopic? get currentTopic {
@@ -99,6 +102,8 @@ class PrayerSessionState extends Equatable {
     bool clearNote = false,
     bool? isLoading,
     String? errorMessage,
+    Verse? currentVerse,
+    bool clearVerse = false,
   }) {
     return PrayerSessionState(
       phase: phase ?? this.phase,
@@ -109,6 +114,7 @@ class PrayerSessionState extends Equatable {
       currentNote: clearNote ? null : (currentNote ?? this.currentNote),
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
+      currentVerse: clearVerse ? null : (currentVerse ?? this.currentVerse),
     );
   }
 
@@ -122,5 +128,6 @@ class PrayerSessionState extends Equatable {
         currentNote,
         isLoading,
         errorMessage,
+        currentVerse,
       ];
 }

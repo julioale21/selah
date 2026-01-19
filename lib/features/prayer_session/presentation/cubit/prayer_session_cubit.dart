@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/services/user_service.dart';
+import '../../../bible/domain/repositories/verse_repository.dart';
 import '../../../prayer_topics/domain/entities/prayer_topic.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/entities/prayer_session.dart';
@@ -9,10 +10,13 @@ import 'prayer_session_state.dart';
 
 class PrayerSessionCubit extends Cubit<PrayerSessionState> {
   final UserService userService;
+  final VerseRepository verseRepository;
   static const _uuid = Uuid();
 
-  PrayerSessionCubit({required this.userService})
-      : super(const PrayerSessionState());
+  PrayerSessionCubit({
+    required this.userService,
+    required this.verseRepository,
+  }) : super(const PrayerSessionState());
 
   String get _userId => userService.currentUserId;
 
@@ -35,7 +39,7 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
     return state.selectedTopics.any((t) => t.id == topicId);
   }
 
-  void startSession() {
+  void startSession() async {
     if (state.selectedTopics.isEmpty) {
       emit(state.copyWith(errorMessage: 'Selecciona al menos un tema'));
       return;
@@ -52,30 +56,65 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
       session: session,
       phase: SessionPhase.adoration,
     ));
+
+    // Load verse for the first phase
+    await _loadVerseForPhase(SessionPhase.adoration);
   }
 
-  void nextPhase() {
+  Future<void> _loadVerseForPhase(SessionPhase phase) async {
+    final category = _getCategoryForPhase(phase);
+    if (category == null) return;
+
+    final verse = await verseRepository.getRandomVerseByCategory(category);
+    emit(state.copyWith(currentVerse: verse, clearVerse: verse == null));
+  }
+
+  String? _getCategoryForPhase(SessionPhase phase) {
+    switch (phase) {
+      case SessionPhase.adoration:
+        return 'adoración';
+      case SessionPhase.confession:
+        return 'confesión';
+      case SessionPhase.thanksgiving:
+        return 'gratitud';
+      case SessionPhase.supplication:
+        return 'súplica';
+      default:
+        return null;
+    }
+  }
+
+  Future<void> refreshVerse() async {
+    await _loadVerseForPhase(state.phase);
+  }
+
+  void nextPhase() async {
     final phases = SessionPhase.values;
     final currentIndex = phases.indexOf(state.phase);
 
     if (currentIndex < phases.length - 1) {
-      emit(state.copyWith(phase: phases[currentIndex + 1]));
+      final newPhase = phases[currentIndex + 1];
+      emit(state.copyWith(phase: newPhase));
+      await _loadVerseForPhase(newPhase);
     }
   }
 
-  void previousPhase() {
+  void previousPhase() async {
     final phases = SessionPhase.values;
     final currentIndex = phases.indexOf(state.phase);
 
     if (currentIndex > 1) {
       // Don't go before adoration
-      emit(state.copyWith(phase: phases[currentIndex - 1]));
+      final newPhase = phases[currentIndex - 1];
+      emit(state.copyWith(phase: newPhase));
+      await _loadVerseForPhase(newPhase);
     }
   }
 
-  void goToPhase(SessionPhase phase) {
+  void goToPhase(SessionPhase phase) async {
     if (phase == SessionPhase.setup) return;
     emit(state.copyWith(phase: phase));
+    await _loadVerseForPhase(phase);
   }
 
   void updateNote(String note) {

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 import '../../../../core/extensions/extensions.dart';
+import '../../../bible/domain/entities/verse.dart';
 import '../../../categories/domain/entities/category.dart' as cat;
 import '../../../prayer_topics/domain/entities/prayer_topic.dart';
 import '../../../prayer_topics/presentation/cubit/topics_cubit.dart';
@@ -106,6 +107,9 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
           onNoteSaved: () {
             context.read<PrayerSessionCubit>().saveEntry();
             _noteController.clear();
+          },
+          onRefreshVerse: () {
+            context.read<PrayerSessionCubit>().refreshVerse();
           },
         );
       case SessionPhase.summary:
@@ -311,11 +315,13 @@ class _PrayerPhaseContent extends StatelessWidget {
   final PrayerSessionState state;
   final TextEditingController noteController;
   final VoidCallback onNoteSaved;
+  final VoidCallback onRefreshVerse;
 
   const _PrayerPhaseContent({
     required this.state,
     required this.noteController,
     required this.onNoteSaved,
+    required this.onRefreshVerse,
   });
 
   @override
@@ -330,6 +336,15 @@ class _PrayerPhaseContent extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: SelahSpacing.md),
+
+          // Verse card for this phase
+          if (state.currentVerse != null)
+            _SessionVerseCard(
+              verse: state.currentVerse!,
+              phase: state.phase,
+              onRefresh: onRefreshVerse,
+            ),
           const SizedBox(height: SelahSpacing.lg),
 
           // Prayer prompt card
@@ -617,6 +632,109 @@ class _StatItem extends StatelessWidget {
               ),
         ),
       ],
+    );
+  }
+}
+
+class _SessionVerseCard extends StatelessWidget {
+  final Verse verse;
+  final SessionPhase phase;
+  final VoidCallback onRefresh;
+
+  const _SessionVerseCard({
+    required this.verse,
+    required this.phase,
+    required this.onRefresh,
+  });
+
+  Color _getPhaseColor() {
+    switch (phase) {
+      case SessionPhase.adoration:
+        return SelahColors.adoration;
+      case SessionPhase.confession:
+        return SelahColors.confession;
+      case SessionPhase.thanksgiving:
+        return SelahColors.thanksgiving;
+      case SessionPhase.supplication:
+        return SelahColors.supplication;
+      default:
+        return SelahColors.primary;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final phaseColor = _getPhaseColor();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(SelahSpacing.radiusMd),
+        side: BorderSide(color: phaseColor.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(SelahSpacing.radiusMd),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              phaseColor.withValues(alpha: 0.1),
+              phaseColor.withValues(alpha: 0.05),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(SelahSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.menu_book,
+                    size: 18,
+                    color: phaseColor,
+                  ),
+                  const SizedBox(width: SelahSpacing.xs),
+                  Text(
+                    'Versículo para meditar',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: phaseColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.refresh, size: 18, color: phaseColor),
+                    onPressed: onRefresh,
+                    tooltip: 'Otro versículo',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: SelahSpacing.sm),
+              Text(
+                '"${verse.textEs}"',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      height: 1.5,
+                    ),
+              ),
+              const SizedBox(height: SelahSpacing.xs),
+              Text(
+                verse.displayReference,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: phaseColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

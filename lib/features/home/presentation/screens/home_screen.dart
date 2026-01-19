@@ -70,7 +70,13 @@ class HomeScreen extends StatelessWidget {
                     icon: const Icon(Icons.list),
                     label: const Text('Temas'),
                   ),
-                  const SizedBox(width: SelahSpacing.md),
+                  const SizedBox(width: SelahSpacing.sm),
+                  TextButton.icon(
+                    onPressed: () => context.push(SelahRoutes.verses),
+                    icon: const Icon(Icons.menu_book),
+                    label: const Text('Versículos'),
+                  ),
+                  const SizedBox(width: SelahSpacing.sm),
                   TextButton.icon(
                     onPressed: () => context.push(SelahRoutes.categories),
                     icon: const Icon(Icons.category),
