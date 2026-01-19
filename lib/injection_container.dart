@@ -43,6 +43,12 @@ import 'features/bible/data/repositories/verse_repository_impl.dart';
 import 'features/bible/domain/repositories/verse_repository.dart';
 import 'features/bible/presentation/cubit/verses_cubit.dart';
 
+// Journal feature
+import 'features/journal/data/datasources/journal_local_datasource.dart';
+import 'features/journal/data/repositories/journal_repository_impl.dart';
+import 'features/journal/domain/repositories/journal_repository.dart';
+import 'features/journal/presentation/cubit/journal_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> init() async {
@@ -160,7 +166,21 @@ Future<void> init() async {
       ));
 
   //! Features - Journal
-  // TODO: Register journal dependencies
+  // Data sources
+  sl.registerLazySingleton<JournalLocalDataSource>(
+    () => JournalLocalDataSourceImpl(databaseHelper: sl()),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<JournalRepository>(
+    () => JournalRepositoryImpl(localDataSource: sl()),
+  );
+
+  // Cubit
+  sl.registerFactory(() => JournalCubit(
+        repository: sl(),
+        userService: sl(),
+      ));
 
   //! Features - Settings
   // TODO: Register settings dependencies

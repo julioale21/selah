@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'selah.db';
-  static const int _databaseVersion = 3;
+  static const int _databaseVersion = 4;
 
   Database? _database;
 
@@ -83,7 +83,10 @@ class DatabaseHelper {
         topic_id TEXT,
         content TEXT NOT NULL,
         acts_step TEXT,
+        type TEXT DEFAULT 'prayer',
+        tags TEXT,
         created_at TEXT NOT NULL,
+        updated_at TEXT,
         FOREIGN KEY (session_id) REFERENCES prayer_sessions(id),
         FOREIGN KEY (topic_id) REFERENCES prayer_topics(id)
       )
@@ -94,7 +97,7 @@ class DatabaseHelper {
       CREATE TABLE answered_prayers (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
-        topic_id TEXT NOT NULL,
+        topic_id TEXT,
         prayer_text TEXT NOT NULL,
         answer_text TEXT,
         prayed_at TEXT NOT NULL,
@@ -205,6 +208,13 @@ class DatabaseHelper {
     if (oldVersion < 3) {
       // Agregar session_id a daily_plans
       await db.execute('ALTER TABLE daily_plans ADD COLUMN session_id TEXT REFERENCES prayer_sessions(id)');
+    }
+
+    if (oldVersion < 4) {
+      // Agregar campos type, tags, updated_at a journal_entries
+      await db.execute("ALTER TABLE journal_entries ADD COLUMN type TEXT DEFAULT 'prayer'");
+      await db.execute('ALTER TABLE journal_entries ADD COLUMN tags TEXT');
+      await db.execute('ALTER TABLE journal_entries ADD COLUMN updated_at TEXT');
     }
   }
 
