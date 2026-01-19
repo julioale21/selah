@@ -1,8 +1,8 @@
 import 'package:get_it/get_it.dart';
+import 'package:selah_ui_kit/selah_ui_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/database/database_helper.dart';
-import 'ui_kit/theme/theme_cubit.dart';
 
 final sl = GetIt.instance;
 

@@ -15,11 +15,11 @@ class SelahSpacing {
   static const double xxl = unit * 12;  // 48
   static const double xxxl = unit * 16; // 64
 
-  // Component spacing
-  static const double cardPadding = md;
-  static const double screenPadding = md;
-  static const double sectionSpacing = lg;
-  static const double itemSpacing = sm;
+  // Specific use cases
+  static const double cardPadding = 16;
+  static const double screenPadding = 20;
+  static const double sectionGap = 24;
+  static const double itemGap = 12;
 
   // Border radius
   static const double radiusSm = 8.0;

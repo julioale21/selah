@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # UI Kit (internal package)
+  selah_ui_kit:
+    path: packages/selah_ui_kit
+
   # State Management
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
@@ -29,7 +33,6 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
-  google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
 
   # Utils

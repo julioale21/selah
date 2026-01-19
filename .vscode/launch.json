@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense para saber los atributos posibles.
+    // Mantenga el puntero para ver las descripciones de los existentes atributos.
+    // Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "selah",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "selah (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "selah (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "selah_ui_kit",
+            "cwd": "packages/selah_ui_kit",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "selah_ui_kit (profile mode)",
+            "cwd": "packages/selah_ui_kit",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "selah_ui_kit (release mode)",
+            "cwd": "packages/selah_ui_kit",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 import 'core/router/app_router.dart';
-import 'ui_kit/theme/selah_theme.dart';
-import 'ui_kit/theme/theme_cubit.dart';
 import 'injection_container.dart';
 
 class SelahApp extends StatelessWidget {

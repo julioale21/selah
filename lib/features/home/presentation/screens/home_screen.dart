@@ -1,41 +1,134 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Selah'),
-        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(
+              context.watch<ThemeCubit>().isDarkMode
+                  ? Icons.light_mode
+                  : Icons.dark_mode,
+            ),
+            onPressed: () => context.read<ThemeCubit>().toggleTheme(),
+          ),
+        ],
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.self_improvement,
-              size: 80,
-              color: Colors.deepPurple,
-            ),
-            SizedBox(height: 24),
-            Text(
-              'Bienvenido a Selah',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(SelahSpacing.screenPadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.self_improvement,
+                size: 80,
+                color: theme.colorScheme.primary,
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Tu espacio de oración personal',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
+              const SizedBox(height: SelahSpacing.lg),
+              Text(
+                'Bienvenido a Selah',
+                style: theme.textTheme.headlineMedium,
               ),
+              const SizedBox(height: SelahSpacing.xs),
+              Text(
+                'Tu espacio de oración personal',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: SelahSpacing.xxl),
+              ElevatedButton.icon(
+                onPressed: () {
+                  // TODO: Navigate to prayer session
+                },
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Iniciar Oración'),
+              ),
+              const SizedBox(height: SelahSpacing.md),
+              OutlinedButton.icon(
+                onPressed: () {
+                  // TODO: Navigate to topics
+                },
+                icon: const Icon(Icons.list),
+                label: const Text('Mis Temas'),
+              ),
+              const SizedBox(height: SelahSpacing.xxl),
+              // ACTS Preview
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _ActsChip(
+                    label: 'A',
+                    color: SelahColors.adoration,
+                    tooltip: 'Adoración',
+                  ),
+                  _ActsChip(
+                    label: 'C',
+                    color: SelahColors.confession,
+                    tooltip: 'Confesión',
+                  ),
+                  _ActsChip(
+                    label: 'T',
+                    color: SelahColors.thanksgiving,
+                    tooltip: 'Gratitud',
+                  ),
+                  _ActsChip(
+                    label: 'S',
+                    color: SelahColors.supplication,
+                    tooltip: 'Súplica',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActsChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final String tooltip;
+
+  const _ActsChip({
+    required this.label,
+    required this.color,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.2),
+          shape: BoxShape.circle,
+          border: Border.all(color: color, width: 2),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
-          ],
+          ),
         ),
       ),
     );
