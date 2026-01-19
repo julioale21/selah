@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -128,9 +129,12 @@ class AppRouter {
       GoRoute(
         path: SelahRoutes.settings,
         name: SelahRoutes.settingsName,
-        builder: (context, state) => BlocProvider(
-          create: (_) => sl<SettingsCubit>(),
-          child: const SettingsScreen(),
+        pageBuilder: (context, state) => MaterialPage(
+          key: const ValueKey('settings_page'),
+          child: BlocProvider(
+            create: (_) => sl<SettingsCubit>(),
+            child: const SettingsScreen(),
+          ),
         ),
       ),
     ],
