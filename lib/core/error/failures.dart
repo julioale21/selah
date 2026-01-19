@@ -44,3 +44,9 @@ class UnexpectedFailure extends Failure {
 class AuthFailure extends Failure {
   const AuthFailure(super.message, {super.code});
 }
+
+/// Fallo de caché local
+class CacheFailure extends Failure {
+  const CacheFailure({required String message, String? code})
+      : super(message, code: code);
+}

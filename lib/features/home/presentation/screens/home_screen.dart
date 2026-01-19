@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -61,6 +62,12 @@ class HomeScreen extends StatelessWidget {
                 },
                 icon: const Icon(Icons.list),
                 label: const Text('Mis Temas'),
+              ),
+              const SizedBox(height: SelahSpacing.md),
+              TextButton.icon(
+                onPressed: () => context.push('/categories'),
+                icon: const Icon(Icons.category),
+                label: const Text('Categorías'),
               ),
               const SizedBox(height: SelahSpacing.xxl),
               // ACTS Preview

@@ -39,3 +39,9 @@ class NotFoundException extends AppException {
 class AuthException extends AppException {
   const AuthException(super.message, {super.code});
 }
+
+/// Error de caché local
+class CacheException extends AppException {
+  const CacheException({required String message, String? code})
+      : super(message, code: code);
+}
