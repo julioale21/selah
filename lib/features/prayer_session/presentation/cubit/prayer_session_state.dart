@@ -17,6 +17,7 @@ class PrayerSessionState extends Equatable {
   final bool isLoading;
   final String? errorMessage;
   final Verse? currentVerse;
+  final bool isFocusMode;
 
   const PrayerSessionState({
     this.phase = SessionPhase.setup,
@@ -28,6 +29,7 @@ class PrayerSessionState extends Equatable {
     this.isLoading = false,
     this.errorMessage,
     this.currentVerse,
+    this.isFocusMode = false,
   });
 
   PrayerTopic? get currentTopic {
@@ -104,6 +106,7 @@ class PrayerSessionState extends Equatable {
     String? errorMessage,
     Verse? currentVerse,
     bool clearVerse = false,
+    bool? isFocusMode,
   }) {
     return PrayerSessionState(
       phase: phase ?? this.phase,
@@ -115,6 +118,7 @@ class PrayerSessionState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       currentVerse: clearVerse ? null : (currentVerse ?? this.currentVerse),
+      isFocusMode: isFocusMode ?? this.isFocusMode,
     );
   }
 
@@ -129,5 +133,6 @@ class PrayerSessionState extends Equatable {
         isLoading,
         errorMessage,
         currentVerse,
+        isFocusMode,
       ];
 }

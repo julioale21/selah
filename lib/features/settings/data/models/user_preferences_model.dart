@@ -12,6 +12,7 @@ class UserPreferencesModel extends UserPreferences {
     super.defaultSessionMinutes,
     super.showVerseOfDay,
     super.hapticFeedback,
+    super.defaultFocusMode,
   });
 
   factory UserPreferencesModel.fromEntity(UserPreferences prefs) {
@@ -22,6 +23,7 @@ class UserPreferencesModel extends UserPreferences {
       defaultSessionMinutes: prefs.defaultSessionMinutes,
       showVerseOfDay: prefs.showVerseOfDay,
       hapticFeedback: prefs.hapticFeedback,
+      defaultFocusMode: prefs.defaultFocusMode,
     );
   }
 
@@ -49,6 +51,7 @@ class UserPreferencesModel extends UserPreferences {
       defaultSessionMinutes: map['default_session_minutes'] as int? ?? 15,
       showVerseOfDay: (map['show_verse_of_day'] as int? ?? 1) == 1,
       hapticFeedback: (map['haptic_feedback'] as int? ?? 1) == 1,
+      defaultFocusMode: (map['default_focus_mode'] as int? ?? 0) == 1,
     );
   }
 
@@ -62,6 +65,7 @@ class UserPreferencesModel extends UserPreferences {
       'default_session_minutes': defaultSessionMinutes,
       'show_verse_of_day': showVerseOfDay ? 1 : 0,
       'haptic_feedback': hapticFeedback ? 1 : 0,
+      'default_focus_mode': defaultFocusMode ? 1 : 0,
     };
   }
 

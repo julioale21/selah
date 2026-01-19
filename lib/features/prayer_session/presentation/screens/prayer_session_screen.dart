@@ -12,6 +12,7 @@ import '../cubit/prayer_session_cubit.dart';
 import '../cubit/prayer_session_state.dart';
 import '../cubit/session_timer_cubit.dart';
 import '../widgets/acts_phase_indicator.dart';
+import '../widgets/focus_mode_view.dart';
 import '../widgets/prayer_prompt_card.dart';
 import '../widgets/session_timer_widget.dart';
 
@@ -47,6 +48,14 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
         }
       },
       builder: (context, state) {
+        // Show focus mode view when active
+        if (state.isFocusMode && !state.isSetup && !state.isSummary) {
+          return FocusModeView(
+            state: state,
+            onExit: () => context.read<PrayerSessionCubit>().exitFocusMode(),
+          );
+        }
+
         return Scaffold(
           appBar: AppBar(
             title: Text(state.phaseTitle),
@@ -55,7 +64,16 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
               onPressed: () => _showExitDialog(context, state),
             ),
             actions: [
-              if (!state.isSetup && !state.isSummary) const SessionTimerWidget(),
+              if (!state.isSetup && !state.isSummary) ...[
+                // Focus mode button
+                IconButton(
+                  icon: const Icon(Icons.fullscreen),
+                  tooltip: 'Modo enfocado',
+                  onPressed: () =>
+                      context.read<PrayerSessionCubit>().toggleFocusMode(),
+                ),
+                const SessionTimerWidget(),
+              ],
             ],
           ),
           body: SafeArea(

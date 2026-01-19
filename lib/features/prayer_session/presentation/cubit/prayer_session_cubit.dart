@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/services/user_service.dart';
 import '../../../bible/domain/repositories/verse_repository.dart';
 import '../../../prayer_topics/domain/entities/prayer_topic.dart';
+import '../../../settings/domain/repositories/settings_repository.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/entities/prayer_session.dart';
 import 'prayer_session_state.dart';
@@ -11,11 +12,13 @@ import 'prayer_session_state.dart';
 class PrayerSessionCubit extends Cubit<PrayerSessionState> {
   final UserService userService;
   final VerseRepository verseRepository;
+  final SettingsRepository settingsRepository;
   static const _uuid = Uuid();
 
   PrayerSessionCubit({
     required this.userService,
     required this.verseRepository,
+    required this.settingsRepository,
   }) : super(const PrayerSessionState());
 
   String get _userId => userService.currentUserId;
@@ -45,6 +48,10 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
       return;
     }
 
+    // Check if focus mode is the default
+    final prefs = await settingsRepository.getPreferences(_userId);
+    final startInFocusMode = prefs.defaultFocusMode;
+
     final session = PrayerSession(
       id: _uuid.v4(),
       userId: _userId,
@@ -55,6 +62,7 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
     emit(state.copyWith(
       session: session,
       phase: SessionPhase.adoration,
+      isFocusMode: startInFocusMode,
     ));
 
     // Load verse for the first phase
@@ -171,6 +179,14 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
 
   void clearError() {
     emit(state.copyWith(errorMessage: null));
+  }
+
+  void toggleFocusMode() {
+    emit(state.copyWith(isFocusMode: !state.isFocusMode));
+  }
+
+  void exitFocusMode() {
+    emit(state.copyWith(isFocusMode: false));
   }
 
   void reset() {

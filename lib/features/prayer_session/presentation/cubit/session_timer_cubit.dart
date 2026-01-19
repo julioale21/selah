@@ -22,8 +22,12 @@ class SessionTimerState extends Equatable {
   }
 
   String get formattedTime {
-    final minutes = (elapsedSeconds ~/ 60).toString().padLeft(2, '0');
+    final hours = elapsedSeconds ~/ 3600;
+    final minutes = ((elapsedSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
     final seconds = (elapsedSeconds % 60).toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '${hours.toString()}:$minutes:$seconds';
+    }
     return '$minutes:$seconds';
   }
 
@@ -31,8 +35,12 @@ class SessionTimerState extends Equatable {
     if (targetMinutes == null) return formattedTime;
     final remaining = (targetMinutes! * 60) - elapsedSeconds;
     if (remaining <= 0) return '00:00';
-    final minutes = (remaining ~/ 60).toString().padLeft(2, '0');
+    final hours = remaining ~/ 3600;
+    final minutes = ((remaining % 3600) ~/ 60).toString().padLeft(2, '0');
     final seconds = (remaining % 60).toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '${hours.toString()}:$minutes:$seconds';
+    }
     return '$minutes:$seconds';
   }
 

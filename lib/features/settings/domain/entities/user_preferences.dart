@@ -8,6 +8,7 @@ class UserPreferences extends Equatable {
   final int defaultSessionMinutes;
   final bool showVerseOfDay;
   final bool hapticFeedback;
+  final bool defaultFocusMode;
 
   const UserPreferences({
     this.themeMode = ThemeMode.system,
@@ -16,6 +17,7 @@ class UserPreferences extends Equatable {
     this.defaultSessionMinutes = 15,
     this.showVerseOfDay = true,
     this.hapticFeedback = true,
+    this.defaultFocusMode = false,
   });
 
   UserPreferences copyWith({
@@ -26,6 +28,7 @@ class UserPreferences extends Equatable {
     int? defaultSessionMinutes,
     bool? showVerseOfDay,
     bool? hapticFeedback,
+    bool? defaultFocusMode,
   }) {
     return UserPreferences(
       themeMode: themeMode ?? this.themeMode,
@@ -34,6 +37,7 @@ class UserPreferences extends Equatable {
       defaultSessionMinutes: defaultSessionMinutes ?? this.defaultSessionMinutes,
       showVerseOfDay: showVerseOfDay ?? this.showVerseOfDay,
       hapticFeedback: hapticFeedback ?? this.hapticFeedback,
+      defaultFocusMode: defaultFocusMode ?? this.defaultFocusMode,
     );
   }
 
@@ -63,5 +67,6 @@ class UserPreferences extends Equatable {
         defaultSessionMinutes,
         showVerseOfDay,
         hapticFeedback,
+        defaultFocusMode,
       ];
 }

@@ -66,6 +66,11 @@ class SettingsCubit extends Cubit<SettingsState> {
     await _savePreferences(newPrefs);
   }
 
+  Future<void> updateDefaultFocusMode(bool enabled) async {
+    final newPrefs = state.preferences.copyWith(defaultFocusMode: enabled);
+    await _savePreferences(newPrefs);
+  }
+
   Future<void> _savePreferences(UserPreferences preferences) async {
     emit(state.copyWith(status: SettingsStatus.saving));
 

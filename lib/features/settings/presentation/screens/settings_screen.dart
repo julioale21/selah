@@ -10,8 +10,19 @@ import 'package:share_plus/share_plus.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/settings_state.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<SettingsCubit>().loadPreferences();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +46,14 @@ class SettingsScreen extends StatelessWidget {
           );
           context.read<SettingsCubit>().clearMessages();
         }
+
+        // Update ThemeCubit when theme preference changes
+        if (state.status == SettingsStatus.loaded || state.status == SettingsStatus.success) {
+          final themeCubit = context.read<ThemeCubit>();
+          if (themeCubit.state != state.preferences.themeMode) {
+            themeCubit.setTheme(state.preferences.themeMode);
+          }
+        }
       },
       builder: (context, state) {
         return Scaffold(
@@ -46,19 +65,33 @@ class SettingsScreen extends StatelessWidget {
               : ListView(
                   padding: const EdgeInsets.all(SelahSpacing.screenPadding),
                   children: [
+                    // Appearance section
                     _buildSectionHeader(context, 'Apariencia'),
                     _ThemeTile(
                       currentMode: state.preferences.themeMode,
-                      onChanged: (mode) =>
-                          context.read<SettingsCubit>().updateThemeMode(mode),
+                      onChanged: (mode) {
+                        context.read<SettingsCubit>().updateThemeMode(mode);
+                        context.read<ThemeCubit>().setTheme(mode);
+                      },
                     ),
                     const Divider(),
+
+                    // Prayer section
                     _buildSectionHeader(context, 'Oración'),
                     _SessionDurationTile(
                       currentMinutes: state.preferences.defaultSessionMinutes,
                       onChanged: (minutes) => context
                           .read<SettingsCubit>()
                           .updateDefaultSessionMinutes(minutes),
+                    ),
+                    SwitchListTile(
+                      title: const Text('Modo enfocado por defecto'),
+                      subtitle: const Text(
+                          'Iniciar sesiones en pantalla minimalista'),
+                      value: state.preferences.defaultFocusMode,
+                      onChanged: (value) => context
+                          .read<SettingsCubit>()
+                          .updateDefaultFocusMode(value),
                     ),
                     SwitchListTile(
                       title: const Text('Versículo del día'),
@@ -70,6 +103,8 @@ class SettingsScreen extends StatelessWidget {
                           .updateShowVerseOfDay(value),
                     ),
                     const Divider(),
+
+                    // Notifications section
                     _buildSectionHeader(context, 'Notificaciones'),
                     SwitchListTile(
                       title: const Text('Recordatorios'),
@@ -87,6 +122,8 @@ class SettingsScreen extends StatelessWidget {
                             .updateReminderTime(time),
                       ),
                     const Divider(),
+
+                    // Accessibility section
                     _buildSectionHeader(context, 'Accesibilidad'),
                     SwitchListTile(
                       title: const Text('Vibración'),
@@ -97,6 +134,8 @@ class SettingsScreen extends StatelessWidget {
                           .updateHapticFeedback(value),
                     ),
                     const Divider(),
+
+                    // Data section
                     _buildSectionHeader(context, 'Datos'),
                     ListTile(
                       leading: const Icon(Icons.storage),
@@ -107,13 +146,31 @@ class SettingsScreen extends StatelessWidget {
                       leading: const Icon(Icons.upload),
                       title: const Text('Exportar datos'),
                       subtitle: const Text('Guardar una copia de tus datos'),
-                      onTap: () => _exportData(context),
+                      onTap: state.status == SettingsStatus.exporting
+                          ? null
+                          : () => _exportData(context),
+                      trailing: state.status == SettingsStatus.exporting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.chevron_right),
                     ),
                     ListTile(
                       leading: const Icon(Icons.download),
                       title: const Text('Importar datos'),
                       subtitle: const Text('Restaurar datos desde archivo'),
-                      onTap: () => _importData(context),
+                      onTap: state.status == SettingsStatus.importing
+                          ? null
+                          : () => _importData(context),
+                      trailing: state.status == SettingsStatus.importing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.chevron_right),
                     ),
                     ListTile(
                       leading: const Icon(Icons.delete_forever,
@@ -121,9 +178,20 @@ class SettingsScreen extends StatelessWidget {
                       title: const Text('Eliminar todos los datos',
                           style: TextStyle(color: Colors.red)),
                       subtitle: const Text('Esta acción no se puede deshacer'),
-                      onTap: () => _confirmClearData(context),
+                      onTap: state.status == SettingsStatus.clearing
+                          ? null
+                          : () => _confirmClearData(context),
+                      trailing: state.status == SettingsStatus.clearing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : null,
                     ),
                     const Divider(),
+
+                    // Info section
                     _buildSectionHeader(context, 'Información'),
                     const ListTile(
                       leading: Icon(Icons.info_outline),
@@ -139,6 +207,7 @@ class SettingsScreen extends StatelessWidget {
                         applicationVersion: '1.0.0',
                       ),
                     ),
+                    const SizedBox(height: SelahSpacing.xl),
                   ],
                 ),
         );
@@ -164,55 +233,84 @@ class SettingsScreen extends StatelessWidget {
     final data = await cubit.exportData();
 
     if (data != null && context.mounted) {
-      final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final file = File('${directory.path}/selah_backup_$timestamp.json');
-      await file.writeAsString(data);
+      try {
+        final directory = await getApplicationDocumentsDirectory();
+        final timestamp = DateTime.now()
+            .toIso8601String()
+            .replaceAll(':', '-')
+            .split('.')[0];
+        final file = File('${directory.path}/selah_backup_$timestamp.json');
+        await file.writeAsString(data);
 
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          subject: 'Backup de Selah',
-        ),
-      );
+        if (context.mounted) {
+          await SharePlus.instance.share(
+            ShareParams(
+              files: [XFile(file.path)],
+              subject: 'Backup de Selah',
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al exportar: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
   Future<void> _importData(BuildContext context) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-    );
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
 
-    if (result != null && result.files.single.path != null && context.mounted) {
-      final file = File(result.files.single.path!);
-      final jsonData = await file.readAsString();
+      if (result != null &&
+          result.files.single.path != null &&
+          context.mounted) {
+        final file = File(result.files.single.path!);
+        final jsonData = await file.readAsString();
 
-      if (context.mounted) {
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Importar datos'),
-            content: const Text(
-              '¿Estás seguro de importar estos datos? '
-              'Los datos existentes con el mismo ID serán reemplazados.',
+        if (context.mounted) {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Importar datos'),
+              content: const Text(
+                '¿Estás seguro de importar estos datos? '
+                'Los datos existentes con el mismo ID serán reemplazados.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Importar'),
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Importar'),
-              ),
-            ],
+          );
+
+          if (confirm == true && context.mounted) {
+            context.read<SettingsCubit>().importData(jsonData);
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar archivo: $e'),
+            backgroundColor: Colors.red,
           ),
         );
-
-        if (confirm == true && context.mounted) {
-          context.read<SettingsCubit>().importData(jsonData);
-        }
       }
     }
   }
@@ -264,26 +362,26 @@ class _ThemeTile extends StatelessWidget {
     return ListTile(
       leading: Icon(_getIcon()),
       title: const Text('Tema'),
-      trailing: DropdownButton<ThemeMode>(
-        value: currentMode,
-        underline: const SizedBox(),
-        items: const [
-          DropdownMenuItem(
+      trailing: SegmentedButton<ThemeMode>(
+        segments: const [
+          ButtonSegment(
             value: ThemeMode.system,
-            child: Text('Automático'),
+            icon: Icon(Icons.brightness_auto, size: 18),
           ),
-          DropdownMenuItem(
+          ButtonSegment(
             value: ThemeMode.light,
-            child: Text('Claro'),
+            icon: Icon(Icons.light_mode, size: 18),
           ),
-          DropdownMenuItem(
+          ButtonSegment(
             value: ThemeMode.dark,
-            child: Text('Oscuro'),
+            icon: Icon(Icons.dark_mode, size: 18),
           ),
         ],
-        onChanged: (mode) {
-          if (mode != null) onChanged(mode);
+        selected: {currentMode},
+        onSelectionChanged: (selected) {
+          onChanged(selected.first);
         },
+        showSelectedIcon: false,
       ),
     );
   }
@@ -319,14 +417,21 @@ class _SessionDurationTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: const Icon(Icons.remove),
+            icon: const Icon(Icons.remove_circle_outline),
             onPressed: currentMinutes > 5
                 ? () => onChanged(currentMinutes - 5)
                 : null,
           ),
-          Text('$currentMinutes'),
+          SizedBox(
+            width: 32,
+            child: Text(
+              '$currentMinutes',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add_circle_outline),
             onPressed: currentMinutes < 60
                 ? () => onChanged(currentMinutes + 5)
                 : null,
@@ -351,7 +456,7 @@ class _ReminderTimeTile extends StatelessWidget {
     return ListTile(
       leading: const Icon(Icons.access_time),
       title: const Text('Hora del recordatorio'),
-      trailing: TextButton(
+      trailing: OutlinedButton(
         onPressed: () async {
           final time = await showTimePicker(
             context: context,
