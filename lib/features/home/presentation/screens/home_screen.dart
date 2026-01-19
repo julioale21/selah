@@ -57,15 +57,26 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: SelahSpacing.md),
               OutlinedButton.icon(
-                onPressed: () => context.push(SelahRoutes.topics),
-                icon: const Icon(Icons.list),
-                label: const Text('Mis Temas'),
+                onPressed: () => context.push(SelahRoutes.planner),
+                icon: const Icon(Icons.calendar_today),
+                label: const Text('Planificador'),
               ),
               const SizedBox(height: SelahSpacing.md),
-              TextButton.icon(
-                onPressed: () => context.push(SelahRoutes.categories),
-                icon: const Icon(Icons.category),
-                label: const Text('Categorías'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => context.push(SelahRoutes.topics),
+                    icon: const Icon(Icons.list),
+                    label: const Text('Temas'),
+                  ),
+                  const SizedBox(width: SelahSpacing.md),
+                  TextButton.icon(
+                    onPressed: () => context.push(SelahRoutes.categories),
+                    icon: const Icon(Icons.category),
+                    label: const Text('Categorías'),
+                  ),
+                ],
               ),
               const SizedBox(height: SelahSpacing.xxl),
               // ACTS Preview

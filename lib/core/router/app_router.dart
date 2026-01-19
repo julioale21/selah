@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/categories/presentation/cubit/categories_cubit.dart';
 import '../../features/categories/presentation/screens/categories_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/planner/presentation/cubit/planner_cubit.dart';
+import '../../features/planner/presentation/screens/planner_screen.dart';
 import '../../features/prayer_session/presentation/cubit/prayer_session_cubit.dart';
 import '../../features/prayer_session/presentation/cubit/session_timer_cubit.dart';
 import '../../features/prayer_session/presentation/screens/prayer_session_screen.dart';
@@ -50,6 +52,14 @@ class AppRouter {
             BlocProvider(create: (_) => sl<TopicsCubit>()),
           ],
           child: const PrayerSessionScreen(),
+        ),
+      ),
+      GoRoute(
+        path: SelahRoutes.planner,
+        name: SelahRoutes.plannerName,
+        builder: (context, state) => BlocProvider(
+          create: (_) => sl<PlannerCubit>(),
+          child: const PlannerScreen(),
         ),
       ),
     ],
