@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/categories/presentation/cubit/categories_cubit.dart';
 import '../../features/categories/presentation/screens/categories_screen.dart';
-import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/home/presentation/screens/home_content.dart';
 import '../../features/bible/presentation/cubit/verses_cubit.dart';
 import '../../features/bible/presentation/screens/verses_screen.dart';
 import '../../features/journal/presentation/cubit/journal_cubit.dart';
@@ -20,17 +20,76 @@ import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/stats/presentation/cubit/stats_cubit.dart';
 import '../../features/stats/presentation/screens/stats_screen.dart';
 import '../../injection_container.dart';
+import '../widgets/main_shell.dart';
 import 'selah_routes.dart';
 
 class AppRouter {
   static final router = GoRouter(
     initialLocation: SelahRoutes.home,
     routes: [
-      GoRoute(
-        path: SelahRoutes.home,
-        name: SelahRoutes.homeName,
-        builder: (context, state) => const HomeScreen(),
+      // Main shell with bottom navigation
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainShell(navigationShell: navigationShell);
+        },
+        branches: [
+          // Home branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: SelahRoutes.home,
+                name: SelahRoutes.homeName,
+                builder: (context, state) => const HomeContent(),
+              ),
+            ],
+          ),
+          // Prayer/Session branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: SelahRoutes.session,
+                name: SelahRoutes.sessionName,
+                builder: (context, state) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider(create: (_) => sl<PrayerSessionCubit>()),
+                    BlocProvider(create: (_) => sl<SessionTimerCubit>()),
+                    BlocProvider(create: (_) => sl<TopicsCubit>()),
+                  ],
+                  child: const PrayerSessionScreen(),
+                ),
+              ),
+            ],
+          ),
+          // Journal branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: SelahRoutes.journal,
+                name: SelahRoutes.journalName,
+                builder: (context, state) => BlocProvider(
+                  create: (_) => sl<JournalCubit>(),
+                  child: const JournalScreen(),
+                ),
+              ),
+            ],
+          ),
+          // Stats branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: SelahRoutes.stats,
+                name: SelahRoutes.statsName,
+                builder: (context, state) => BlocProvider(
+                  create: (_) => sl<StatsCubit>(),
+                  child: const StatsScreen(),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
+
+      // Routes outside of the shell (no bottom nav)
       GoRoute(
         path: SelahRoutes.categories,
         name: SelahRoutes.categoriesName,
@@ -51,18 +110,6 @@ class AppRouter {
         ),
       ),
       GoRoute(
-        path: SelahRoutes.session,
-        name: SelahRoutes.sessionName,
-        builder: (context, state) => MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => sl<PrayerSessionCubit>()),
-            BlocProvider(create: (_) => sl<SessionTimerCubit>()),
-            BlocProvider(create: (_) => sl<TopicsCubit>()),
-          ],
-          child: const PrayerSessionScreen(),
-        ),
-      ),
-      GoRoute(
         path: SelahRoutes.planner,
         name: SelahRoutes.plannerName,
         builder: (context, state) => BlocProvider(
@@ -79,27 +126,11 @@ class AppRouter {
         ),
       ),
       GoRoute(
-        path: SelahRoutes.journal,
-        name: SelahRoutes.journalName,
-        builder: (context, state) => BlocProvider(
-          create: (_) => sl<JournalCubit>(),
-          child: const JournalScreen(),
-        ),
-      ),
-      GoRoute(
         path: SelahRoutes.settings,
         name: SelahRoutes.settingsName,
         builder: (context, state) => BlocProvider(
           create: (_) => sl<SettingsCubit>(),
           child: const SettingsScreen(),
-        ),
-      ),
-      GoRoute(
-        path: SelahRoutes.stats,
-        name: SelahRoutes.statsName,
-        builder: (context, state) => BlocProvider(
-          create: (_) => sl<StatsCubit>(),
-          child: const StatsScreen(),
         ),
       ),
     ],
