@@ -28,6 +28,9 @@ import 'features/prayer_topics/domain/usecases/update_topic.dart';
 import 'features/prayer_topics/presentation/cubit/topics_cubit.dart';
 
 // Prayer Session feature
+import 'features/prayer_session/data/datasources/prayer_session_local_datasource.dart';
+import 'features/prayer_session/data/repositories/prayer_session_repository_impl.dart';
+import 'features/prayer_session/domain/repositories/prayer_session_repository.dart';
 import 'features/prayer_session/presentation/cubit/prayer_session_cubit.dart';
 import 'features/prayer_session/presentation/cubit/session_timer_cubit.dart';
 
@@ -54,6 +57,12 @@ import 'features/settings/data/datasources/settings_local_datasource.dart';
 import 'features/settings/data/repositories/settings_repository_impl.dart';
 import 'features/settings/domain/repositories/settings_repository.dart';
 import 'features/settings/presentation/cubit/settings_cubit.dart';
+
+// Stats feature
+import 'features/stats/data/datasources/stats_local_datasource.dart';
+import 'features/stats/data/repositories/stats_repository_impl.dart';
+import 'features/stats/domain/repositories/stats_repository.dart';
+import 'features/stats/presentation/cubit/stats_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -126,12 +135,23 @@ Future<void> init() async {
       ));
 
   //! Features - Prayer Session
+  // Data sources
+  sl.registerLazySingleton<PrayerSessionLocalDataSource>(
+    () => PrayerSessionLocalDataSourceImpl(databaseHelper: sl()),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<PrayerSessionRepository>(
+    () => PrayerSessionRepositoryImpl(localDataSource: sl()),
+  );
+
   // Cubits
   sl.registerFactory(() => SessionTimerCubit());
   sl.registerFactory(() => PrayerSessionCubit(
         userService: sl(),
         verseRepository: sl(),
         settingsRepository: sl(),
+        sessionRepository: sl(),
       ));
 
   //! Features - Planner
@@ -207,5 +227,19 @@ Future<void> init() async {
       ));
 
   //! Features - Stats
-  // TODO: Register stats dependencies
+  // Data sources
+  sl.registerLazySingleton<StatsLocalDataSource>(
+    () => StatsLocalDataSourceImpl(databaseHelper: sl()),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<StatsRepository>(
+    () => StatsRepositoryImpl(localDataSource: sl()),
+  );
+
+  // Cubit
+  sl.registerFactory(() => StatsCubit(
+        repository: sl(),
+        userService: sl(),
+      ));
 }

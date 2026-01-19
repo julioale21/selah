@@ -82,6 +82,11 @@ class HomeScreen extends StatelessWidget {
                     icon: const Icon(Icons.category),
                     label: const Text('Categorías'),
                   ),
+                  TextButton.icon(
+                    onPressed: () => context.push(SelahRoutes.stats),
+                    icon: const Icon(Icons.bar_chart),
+                    label: const Text('Estadísticas'),
+                  ),
                 ],
               ),
               const SizedBox(height: SelahSpacing.xxl),

@@ -17,6 +17,8 @@ import '../../features/prayer_topics/presentation/cubit/topics_cubit.dart';
 import '../../features/prayer_topics/presentation/screens/topics_screen.dart';
 import '../../features/settings/presentation/cubit/settings_cubit.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/stats/presentation/cubit/stats_cubit.dart';
+import '../../features/stats/presentation/screens/stats_screen.dart';
 import '../../injection_container.dart';
 import 'selah_routes.dart';
 
@@ -90,6 +92,14 @@ class AppRouter {
         builder: (context, state) => BlocProvider(
           create: (_) => sl<SettingsCubit>(),
           child: const SettingsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: SelahRoutes.stats,
+        name: SelahRoutes.statsName,
+        builder: (context, state) => BlocProvider(
+          create: (_) => sl<StatsCubit>(),
+          child: const StatsScreen(),
         ),
       ),
     ],
