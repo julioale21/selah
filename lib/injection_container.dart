@@ -49,6 +49,12 @@ import 'features/journal/data/repositories/journal_repository_impl.dart';
 import 'features/journal/domain/repositories/journal_repository.dart';
 import 'features/journal/presentation/cubit/journal_cubit.dart';
 
+// Settings feature
+import 'features/settings/data/datasources/settings_local_datasource.dart';
+import 'features/settings/data/repositories/settings_repository_impl.dart';
+import 'features/settings/domain/repositories/settings_repository.dart';
+import 'features/settings/presentation/cubit/settings_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> init() async {
@@ -183,7 +189,21 @@ Future<void> init() async {
       ));
 
   //! Features - Settings
-  // TODO: Register settings dependencies
+  // Data sources
+  sl.registerLazySingleton<SettingsLocalDataSource>(
+    () => SettingsLocalDataSourceImpl(databaseHelper: sl()),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<SettingsRepository>(
+    () => SettingsRepositoryImpl(localDataSource: sl()),
+  );
+
+  // Cubit
+  sl.registerFactory(() => SettingsCubit(
+        repository: sl(),
+        userId: sl<UserService>().currentUserId,
+      ));
 
   //! Features - Stats
   // TODO: Register stats dependencies

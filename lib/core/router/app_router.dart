@@ -15,6 +15,8 @@ import '../../features/prayer_session/presentation/cubit/session_timer_cubit.dar
 import '../../features/prayer_session/presentation/screens/prayer_session_screen.dart';
 import '../../features/prayer_topics/presentation/cubit/topics_cubit.dart';
 import '../../features/prayer_topics/presentation/screens/topics_screen.dart';
+import '../../features/settings/presentation/cubit/settings_cubit.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../injection_container.dart';
 import 'selah_routes.dart';
 
@@ -80,6 +82,14 @@ class AppRouter {
         builder: (context, state) => BlocProvider(
           create: (_) => sl<JournalCubit>(),
           child: const JournalScreen(),
+        ),
+      ),
+      GoRoute(
+        path: SelahRoutes.settings,
+        name: SelahRoutes.settingsName,
+        builder: (context, state) => BlocProvider(
+          create: (_) => sl<SettingsCubit>(),
+          child: const SettingsScreen(),
         ),
       ),
     ],

@@ -24,6 +24,10 @@ class HomeScreen extends StatelessWidget {
             ),
             onPressed: () => context.read<ThemeCubit>().toggleTheme(),
           ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => context.push(SelahRoutes.settings),
+          ),
         ],
       ),
       body: Center(

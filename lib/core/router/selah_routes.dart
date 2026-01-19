@@ -7,6 +7,7 @@ abstract class SelahRoutes {
   static const String planner = '/planner';
   static const String verses = '/verses';
   static const String journal = '/journal';
+  static const String settings = '/settings';
 
   // Names
   static const String homeName = 'home';
@@ -16,4 +17,5 @@ abstract class SelahRoutes {
   static const String plannerName = 'planner';
   static const String versesName = 'verses';
   static const String journalName = 'journal';
+  static const String settingsName = 'settings';
 }
