@@ -31,6 +31,12 @@ import 'features/prayer_topics/presentation/cubit/topics_cubit.dart';
 import 'features/prayer_session/presentation/cubit/prayer_session_cubit.dart';
 import 'features/prayer_session/presentation/cubit/session_timer_cubit.dart';
 
+// Planner feature
+import 'features/planner/data/datasources/planner_local_datasource.dart';
+import 'features/planner/data/repositories/planner_repository_impl.dart';
+import 'features/planner/domain/repositories/planner_repository.dart';
+import 'features/planner/presentation/cubit/planner_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> init() async {
@@ -107,7 +113,22 @@ Future<void> init() async {
   sl.registerFactory(() => PrayerSessionCubit(userService: sl()));
 
   //! Features - Planner
-  // TODO: Register planner dependencies
+  // Data sources
+  sl.registerLazySingleton<PlannerLocalDataSource>(
+    () => PlannerLocalDataSourceImpl(databaseHelper: sl()),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<PlannerRepository>(
+    () => PlannerRepositoryImpl(localDataSource: sl()),
+  );
+
+  // Cubit
+  sl.registerFactory(() => PlannerCubit(
+        plannerRepository: sl(),
+        getTopics: sl(),
+        userService: sl(),
+      ));
 
   //! Features - Bible
   // TODO: Register bible dependencies
