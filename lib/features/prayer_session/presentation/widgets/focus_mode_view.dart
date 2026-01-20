@@ -125,8 +125,8 @@ class FocusModeView extends StatelessWidget {
 
                 const SizedBox(height: SelahSpacing.xxl),
 
-                // Current topic
-                if (state.currentTopic != null)
+                // Current topic - only show in Supplication phase
+                if (state.isSupplication && state.currentTopic != null)
                   _TopicDisplay(
                     topic: state.currentTopic!,
                     currentIndex: state.currentTopicIndex,
@@ -343,8 +343,6 @@ class _TopicDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disabledColor = subtleTextColor.withValues(alpha: 0.3);
-
     return Column(
       children: [
         Text(
@@ -356,47 +354,21 @@ class _TopicDisplay extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (totalTopics > 1)
-              IconButton(
-                icon: Icon(
-                  Icons.chevron_left,
-                  color: currentIndex > 0 ? subtleTextColor : disabledColor,
-                ),
-                onPressed: currentIndex > 0
-                    ? () => context.read<PrayerSessionCubit>().previousTopic()
-                    : null,
-              ),
-            Flexible(
-              child: Text(
-                topic.title,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w300,
-                ),
-                textAlign: TextAlign.center,
-              ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: SelahSpacing.lg),
+          child: Text(
+            topic.title,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 22,
+              fontWeight: FontWeight.w300,
             ),
-            if (totalTopics > 1)
-              IconButton(
-                icon: Icon(
-                  Icons.chevron_right,
-                  color: currentIndex < totalTopics - 1
-                      ? subtleTextColor
-                      : disabledColor,
-                ),
-                onPressed: currentIndex < totalTopics - 1
-                    ? () => context.read<PrayerSessionCubit>().nextTopic()
-                    : null,
-              ),
-          ],
+            textAlign: TextAlign.center,
+          ),
         ),
         if (totalTopics > 1)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: 8),
             child: Text(
               '${currentIndex + 1} de $totalTopics',
               style: TextStyle(
@@ -572,20 +544,30 @@ class _NavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<PrayerSessionCubit>();
     final timerCubit = context.read<SessionTimerCubit>();
-    final isLastPhase = state.phase == SessionPhase.supplication;
     final buttonColor = isDark ? Colors.white54 : Colors.black54;
     final buttonForeground = isDark ? Colors.black87 : Colors.white;
+
+    // Determine if we're at the end
+    final isLastTopicInSupplication = state.isSupplication &&
+        state.selectedTopics.isNotEmpty &&
+        state.currentTopicIndex >= state.selectedTopics.length - 1;
+
+    final isAtEnd = state.isSupplication &&
+        (state.selectedTopics.isEmpty || isLastTopicInSupplication);
+
+    // Determine next label
+    String nextLabel = isAtEnd ? 'Amén' : 'Siguiente';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: SelahSpacing.xl),
       child: Row(
         children: [
-          // Previous
+          // Previous button
           Expanded(
             child: state.isAdoration
                 ? const SizedBox()
                 : TextButton.icon(
-                    onPressed: cubit.previousPhase,
+                    onPressed: () => _handlePrevious(context, cubit),
                     icon: const Icon(Icons.arrow_back, size: 18),
                     label: const Text('Anterior'),
                     style: TextButton.styleFrom(
@@ -594,8 +576,8 @@ class _NavigationBar extends StatelessWidget {
                   ),
           ),
 
-          // Finish or Next
-          if (isLastPhase)
+          // Next/Amén button
+          if (isAtEnd)
             FilledButton.icon(
               onPressed: () {
                 cubit.finishSession(timerCubit.state.elapsedSeconds);
@@ -603,7 +585,7 @@ class _NavigationBar extends StatelessWidget {
                 cubit.exitFocusMode();
               },
               icon: const Icon(Icons.check, size: 18),
-              label: const Text('Amén'),
+              label: Text(nextLabel),
               style: FilledButton.styleFrom(
                 backgroundColor: phaseColor,
                 foregroundColor: buttonForeground,
@@ -616,12 +598,12 @@ class _NavigationBar extends StatelessWidget {
           else
             const SizedBox(width: 80),
 
-          // Next
+          // Next button (when not at end)
           Expanded(
-            child: isLastPhase
+            child: isAtEnd
                 ? const SizedBox()
                 : TextButton.icon(
-                    onPressed: cubit.nextPhase,
+                    onPressed: () => _handleNext(context, cubit),
                     icon: const Text('Siguiente'),
                     label: const Icon(Icons.arrow_forward, size: 18),
                     style: TextButton.styleFrom(
@@ -632,5 +614,31 @@ class _NavigationBar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _handlePrevious(BuildContext context, PrayerSessionCubit cubit) {
+    if (state.isSupplication && state.currentTopicIndex > 0) {
+      // Navigate to previous topic
+      cubit.previousTopic();
+    } else if (state.isSupplication && state.currentTopicIndex == 0) {
+      // Go back to thanksgiving
+      cubit.previousPhase();
+    } else {
+      // Go to previous phase
+      cubit.previousPhase();
+    }
+  }
+
+  void _handleNext(BuildContext context, PrayerSessionCubit cubit) {
+    if (state.isSupplication) {
+      if (state.currentTopicIndex < state.selectedTopics.length - 1) {
+        // Next topic
+        cubit.nextTopic();
+      }
+      // If at last topic, the Amén button handles finishing
+    } else {
+      // Next phase
+      cubit.nextPhase();
+    }
   }
 }

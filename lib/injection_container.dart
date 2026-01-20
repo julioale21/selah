@@ -152,6 +152,7 @@ Future<void> init() async {
         verseRepository: sl(),
         settingsRepository: sl(),
         sessionRepository: sl(),
+        topicRepository: sl(),
       ));
 
   //! Features - Planner

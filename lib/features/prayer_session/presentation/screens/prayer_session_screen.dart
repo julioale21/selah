@@ -6,10 +6,7 @@ import 'package:selah_ui_kit/selah_ui_kit.dart';
 import '../../../../core/extensions/extensions.dart';
 import '../../../../core/router/selah_routes.dart';
 import '../../../bible/domain/entities/verse.dart';
-import '../../../categories/domain/entities/category.dart' as cat;
 import '../../../prayer_topics/domain/entities/prayer_topic.dart';
-import '../../../prayer_topics/presentation/cubit/topics_cubit.dart';
-import '../../../prayer_topics/presentation/cubit/topics_state.dart';
 import '../cubit/prayer_session_cubit.dart';
 import '../cubit/prayer_session_state.dart';
 import '../cubit/session_timer_cubit.dart';
@@ -27,11 +24,19 @@ class PrayerSessionScreen extends StatefulWidget {
 
 class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
   final TextEditingController _noteController = TextEditingController();
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    context.read<TopicsCubit>().loadTopics();
+    // Defer initialization to after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_initialized) {
+        _initialized = true;
+        context.read<PrayerSessionCubit>().initializeSession();
+        context.read<SessionTimerCubit>().start();
+      }
+    });
   }
 
   @override
@@ -50,8 +55,15 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
         }
       },
       builder: (context, state) {
+        // Show loading
+        if (state.isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
         // Show focus mode view when active
-        if (state.isFocusMode && !state.isSetup && !state.isSummary) {
+        if (state.isFocusMode && !state.isSummary) {
           return FocusModeView(
             state: state,
             onExit: () => context.read<PrayerSessionCubit>().exitFocusMode(),
@@ -60,14 +72,13 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(state.phaseTitle),
+            title: Text(_getTitle(state)),
             leading: IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => _showExitDialog(context, state),
+              onPressed: () => _showExitDialog(context),
             ),
             actions: [
-              if (!state.isSetup && !state.isSummary) ...[
-                // Focus mode button
+              if (!state.isSummary) ...[
                 IconButton(
                   icon: const Icon(Icons.fullscreen),
                   tooltip: 'Modo enfocado',
@@ -82,7 +93,7 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
             child: Column(
               children: [
                 // ACTS Progress indicator
-                if (!state.isSetup && !state.isSummary)
+                if (!state.isSummary)
                   ACTSPhaseIndicator(
                     currentPhase: state.phase,
                     onPhaseTap: (phase) {
@@ -105,55 +116,32 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
     );
   }
 
-  Widget _buildPhaseContent(BuildContext context, PrayerSessionState state) {
-    switch (state.phase) {
-      case SessionPhase.setup:
-        return _SetupPhaseContent(
-          selectedTopics: state.selectedTopics,
-          onToggleTopic: (topic) {
-            context.read<PrayerSessionCubit>().toggleTopic(topic);
-          },
-          isTopicSelected: (topicId) {
-            return context.read<PrayerSessionCubit>().isTopicSelected(topicId);
-          },
-        );
-      case SessionPhase.adoration:
-      case SessionPhase.confession:
-      case SessionPhase.thanksgiving:
-      case SessionPhase.supplication:
-        return _PrayerPhaseContent(
-          state: state,
-          noteController: _noteController,
-          onNoteSaved: () {
-            context.read<PrayerSessionCubit>().saveEntry();
-            _noteController.clear();
-          },
-          onRefreshVerse: () {
-            context.read<PrayerSessionCubit>().refreshVerse();
-          },
-        );
-      case SessionPhase.summary:
-        return _SummaryPhaseContent(state: state);
+  String _getTitle(PrayerSessionState state) {
+    if (state.isSupplication && state.selectedTopics.isNotEmpty) {
+      return '${state.phaseTitle} - ${state.currentTopicIndex + 1}/${state.selectedTopics.length}';
     }
+    return state.phaseTitle;
+  }
+
+  Widget _buildPhaseContent(BuildContext context, PrayerSessionState state) {
+    if (state.isSummary) {
+      return _SummaryPhaseContent(state: state);
+    }
+
+    return _PrayerPhaseContent(
+      state: state,
+      noteController: _noteController,
+      onNoteSaved: () {
+        context.read<PrayerSessionCubit>().saveEntry();
+        _noteController.clear();
+      },
+      onRefreshVerse: () {
+        context.read<PrayerSessionCubit>().refreshVerse();
+      },
+    );
   }
 
   Widget _buildNavigationBar(BuildContext context, PrayerSessionState state) {
-    if (state.isSetup) {
-      return Padding(
-        padding: const EdgeInsets.all(SelahSpacing.md),
-        child: SelahButton(
-          label: 'Comenzar Oración',
-          isFullWidth: true,
-          onPressed: state.selectedTopics.isEmpty
-              ? null
-              : () {
-                  context.read<PrayerSessionCubit>().startSession();
-                  context.read<SessionTimerCubit>().start();
-                },
-        ),
-      );
-    }
-
     if (state.isSummary) {
       return Padding(
         padding: const EdgeInsets.all(SelahSpacing.md),
@@ -165,36 +153,47 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
       );
     }
 
+    // Determine if we're at the last step
+    final isLastTopicInSupplication = state.isSupplication &&
+        state.selectedTopics.isNotEmpty &&
+        state.currentTopicIndex >= state.selectedTopics.length - 1;
+
+    final isLastPhaseBeforeSupplication =
+        state.phase == SessionPhase.thanksgiving;
+
+    final bool isAtEnd = state.isSupplication &&
+        (state.selectedTopics.isEmpty || isLastTopicInSupplication);
+
+    // Determine button labels
+    String nextLabel;
+    if (isAtEnd) {
+      nextLabel = 'Amén';
+    } else if (isLastPhaseBeforeSupplication && state.selectedTopics.isEmpty) {
+      nextLabel = 'Amén';
+    } else {
+      nextLabel = 'Siguiente';
+    }
+
     return Padding(
       padding: const EdgeInsets.all(SelahSpacing.md),
       child: Row(
         children: [
+          // Previous button
           if (!state.isAdoration)
             Expanded(
               child: SelahButton(
                 label: 'Anterior',
                 variant: SelahButtonVariant.secondary,
-                onPressed: () {
-                  context.read<PrayerSessionCubit>().previousPhase();
-                },
+                onPressed: () => _handlePrevious(context, state),
               ),
             ),
           if (!state.isAdoration) const SizedBox(width: SelahSpacing.md),
+
+          // Next button
           Expanded(
             child: SelahButton(
-              label: state.phase == SessionPhase.supplication
-                  ? 'Terminar'
-                  : 'Siguiente',
-              onPressed: () {
-                if (state.phase == SessionPhase.supplication) {
-                  final elapsed =
-                      context.read<SessionTimerCubit>().state.elapsedSeconds;
-                  context.read<PrayerSessionCubit>().finishSession(elapsed);
-                  context.read<SessionTimerCubit>().finish();
-                } else {
-                  context.read<PrayerSessionCubit>().nextPhase();
-                }
-              },
+              label: nextLabel,
+              onPressed: () => _handleNext(context, state),
             ),
           ),
         ],
@@ -202,12 +201,45 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
     );
   }
 
-  void _showExitDialog(BuildContext context, PrayerSessionState state) {
-    if (state.isSetup) {
-      context.go(SelahRoutes.home);
-      return;
+  void _handlePrevious(BuildContext context, PrayerSessionState state) {
+    if (state.isSupplication && state.currentTopicIndex > 0) {
+      // Navigate to previous topic
+      context.read<PrayerSessionCubit>().previousTopic();
+    } else if (state.isSupplication && state.currentTopicIndex == 0) {
+      // Go back to thanksgiving
+      context.read<PrayerSessionCubit>().previousPhase();
+    } else {
+      // Go to previous phase
+      context.read<PrayerSessionCubit>().previousPhase();
     }
+  }
 
+  void _handleNext(BuildContext context, PrayerSessionState state) {
+    if (state.isSupplication) {
+      if (state.selectedTopics.isEmpty ||
+          state.currentTopicIndex >= state.selectedTopics.length - 1) {
+        // Finish session
+        final elapsed =
+            context.read<SessionTimerCubit>().state.elapsedSeconds;
+        context.read<PrayerSessionCubit>().finishSession(elapsed);
+        context.read<SessionTimerCubit>().finish();
+      } else {
+        // Next topic
+        context.read<PrayerSessionCubit>().nextTopic();
+      }
+    } else if (state.phase == SessionPhase.thanksgiving &&
+        state.selectedTopics.isEmpty) {
+      // No topics, finish session
+      final elapsed = context.read<SessionTimerCubit>().state.elapsedSeconds;
+      context.read<PrayerSessionCubit>().finishSession(elapsed);
+      context.read<SessionTimerCubit>().finish();
+    } else {
+      // Next phase
+      context.read<PrayerSessionCubit>().nextPhase();
+    }
+  }
+
+  void _showExitDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -227,106 +259,6 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SetupPhaseContent extends StatelessWidget {
-  final List<PrayerTopic> selectedTopics;
-  final Function(PrayerTopic) onToggleTopic;
-  final bool Function(String) isTopicSelected;
-
-  const _SetupPhaseContent({
-    required this.selectedTopics,
-    required this.onToggleTopic,
-    required this.isTopicSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<TopicsCubit, TopicsState>(
-      builder: (context, topicsState) {
-        if (topicsState.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (topicsState.topics.isEmpty) {
-          return SelahEmptyState(
-            icon: Icons.bookmark_border,
-            title: 'Sin temas',
-            description: 'Crea temas de oración primero para comenzar una sesión',
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(SelahSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Selecciona los temas por los que deseas orar:',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: SelahSpacing.xs),
-                  Text(
-                    '${selectedTopics.length} tema(s) seleccionado(s)',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: SelahSpacing.md),
-                itemCount: topicsState.topics.length,
-                itemBuilder: (context, index) {
-                  final topic = topicsState.topics[index];
-                  final isSelected = isTopicSelected(topic.id);
-                  final iconData =
-                      cat.Category.iconMap[topic.iconName] ?? Icons.bookmark;
-
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: SelahSpacing.sm),
-                    child: CheckboxListTile(
-                      value: isSelected,
-                      onChanged: (_) => onToggleTopic(topic),
-                      secondary: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primaryContainer
-                              .withValues(alpha: 0.5),
-                          borderRadius:
-                              BorderRadius.circular(SelahSpacing.radiusSm),
-                        ),
-                        child: Icon(
-                          iconData,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      title: Text(topic.title),
-                      subtitle: topic.description != null
-                          ? Text(
-                              topic.description!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            )
-                          : null,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }
@@ -367,22 +299,20 @@ class _PrayerPhaseContent extends StatelessWidget {
             ),
           const SizedBox(height: SelahSpacing.lg),
 
-          // Prayer prompt card
-          PrayerPromptCard(
-            phase: state.phase,
-            topic: state.currentTopic,
-          ),
-          const SizedBox(height: SelahSpacing.lg),
-
-          // Topic navigator (if multiple topics)
-          if (state.selectedTopics.length > 1)
-            _TopicNavigator(
-              topics: state.selectedTopics,
+          // Show topic card only in Supplication phase
+          if (state.isSupplication && state.currentTopic != null)
+            _TopicCard(
+              topic: state.currentTopic!,
               currentIndex: state.currentTopicIndex,
-              onPrevious: () =>
-                  context.read<PrayerSessionCubit>().previousTopic(),
-              onNext: () => context.read<PrayerSessionCubit>().nextTopic(),
+              totalTopics: state.selectedTopics.length,
+            )
+          else
+            // Prayer prompt card for other phases
+            PrayerPromptCard(
+              phase: state.phase,
+              topic: null,
             ),
+
           const SizedBox(height: SelahSpacing.lg),
 
           // Journal entry
@@ -433,131 +363,101 @@ class _PrayerPhaseContent extends StatelessWidget {
   }
 }
 
-class _TopicNavigator extends StatelessWidget {
-  final List<PrayerTopic> topics;
+class _TopicCard extends StatelessWidget {
+  final PrayerTopic topic;
   final int currentIndex;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
+  final int totalTopics;
 
-  const _TopicNavigator({
-    required this.topics,
+  const _TopicCard({
+    required this.topic,
     required this.currentIndex,
-    required this.onPrevious,
-    required this.onNext,
+    required this.totalTopics,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final topic = topics[currentIndex];
+    const phaseColor = Color(0xFF5B9FD4); // Supplication color
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  phaseColor.withValues(alpha: 0.2),
+                  phaseColor.withValues(alpha: 0.1),
+                ]
+              : [
+                  phaseColor.withValues(alpha: 0.15),
+                  phaseColor.withValues(alpha: 0.05),
+                ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: phaseColor.withValues(alpha: 0.3),
+        ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          _NavButton(
-            icon: Icons.chevron_left_rounded,
-            onTap: currentIndex > 0 ? onPrevious : null,
-            isDark: isDark,
+          // Progress indicator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(totalTopics, (i) {
+              return Container(
+                width: i == currentIndex ? 20 : 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: i == currentIndex
+                      ? phaseColor
+                      : phaseColor.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              );
+            }),
           ),
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  'Orando por',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: isDark ? Colors.white38 : Colors.black38,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  topic.title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(topics.length, (i) {
-                    return Container(
-                      width: i == currentIndex ? 16 : 6,
-                      height: 6,
-                      margin: const EdgeInsets.symmetric(horizontal: 2),
-                      decoration: BoxDecoration(
-                        color: i == currentIndex
-                            ? theme.colorScheme.primary
-                            : (isDark ? Colors.white12 : Colors.black12),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    );
-                  }),
-                ),
-              ],
+          const SizedBox(height: 16),
+
+          // Topic info
+          Text(
+            'Orando por',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: phaseColor,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          _NavButton(
-            icon: Icons.chevron_right_rounded,
-            onTap: currentIndex < topics.length - 1 ? onNext : null,
-            isDark: isDark,
+          const SizedBox(height: 8),
+          Text(
+            topic.title,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (topic.description != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              topic.description!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: 12),
+          Text(
+            '${currentIndex + 1} de $totalTopics',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: isDark ? Colors.white38 : Colors.black38,
+            ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _NavButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-  final bool isDark;
-
-  const _NavButton({
-    required this.icon,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isEnabled = onTap != null;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: isEnabled
-              ? (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05))
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          icon,
-          size: 24,
-          color: isEnabled
-              ? (isDark ? Colors.white70 : Colors.black54)
-              : (isDark ? Colors.white12 : Colors.black12),
-        ),
       ),
     );
   }
@@ -742,13 +642,13 @@ class _SessionVerseCard extends StatelessWidget {
   Color _getPhaseColor() {
     switch (phase) {
       case SessionPhase.adoration:
-        return const Color(0xFFE8A838); // Warm gold
+        return const Color(0xFFE8A838);
       case SessionPhase.confession:
-        return const Color(0xFF9B7FC7); // Soft purple
+        return const Color(0xFF9B7FC7);
       case SessionPhase.thanksgiving:
-        return const Color(0xFF5BAE7D); // Fresh green
+        return const Color(0xFF5BAE7D);
       case SessionPhase.supplication:
-        return const Color(0xFF5B9FD4); // Calm blue
+        return const Color(0xFF5B9FD4);
       default:
         return SelahColors.primary;
     }
@@ -779,27 +679,19 @@ class _SessionVerseCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: phaseColor.withValues(alpha: isDark ? 0.15 : 0.08),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(15)),
             ),
             child: Row(
               children: [
                 Icon(
-                  Icons.auto_stories_rounded,
+                  Icons.format_quote_rounded,
                   size: 18,
                   color: phaseColor,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Versículo para meditar',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: phaseColor,
-                    fontWeight: FontWeight.w600,
-                  ),
                 ),
                 const Spacer(),
                 GestureDetector(
@@ -820,7 +712,6 @@ class _SessionVerseCard extends StatelessWidget {
               ],
             ),
           ),
-          // Content
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -831,12 +722,15 @@ class _SessionVerseCard extends StatelessWidget {
                   style: theme.textTheme.bodyLarge?.copyWith(
                     fontStyle: FontStyle.italic,
                     height: 1.6,
-                    color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.9)
+                        : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: phaseColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),

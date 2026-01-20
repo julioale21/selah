@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/services/user_service.dart';
 import '../../../bible/domain/repositories/verse_repository.dart';
 import '../../../prayer_topics/domain/entities/prayer_topic.dart';
+import '../../../prayer_topics/domain/repositories/prayer_topic_repository.dart';
 import '../../../settings/domain/repositories/settings_repository.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/entities/prayer_session.dart';
@@ -15,6 +16,7 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
   final VerseRepository verseRepository;
   final SettingsRepository settingsRepository;
   final PrayerSessionRepository sessionRepository;
+  final PrayerTopicRepository topicRepository;
   static const _uuid = Uuid();
 
   PrayerSessionCubit({
@@ -22,54 +24,56 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
     required this.verseRepository,
     required this.settingsRepository,
     required this.sessionRepository,
+    required this.topicRepository,
   }) : super(const PrayerSessionState());
 
   String get _userId => userService.currentUserId;
 
-  void selectTopics(List<PrayerTopic> topics) {
-    emit(state.copyWith(selectedTopics: topics));
-  }
+  /// Initialize the session - load topics and start immediately
+  Future<void> initializeSession({List<String>? topicIds}) async {
+    emit(state.copyWith(isLoading: true));
 
-  void toggleTopic(PrayerTopic topic) {
-    final current = List<PrayerTopic>.from(state.selectedTopics);
-    final index = current.indexWhere((t) => t.id == topic.id);
-    if (index >= 0) {
-      current.removeAt(index);
-    } else {
-      current.add(topic);
+    try {
+      // Load topics - either specific ones or all
+      final topicsResult = await topicRepository.getTopics(_userId);
+
+      final topics = topicsResult.fold<List<PrayerTopic>>(
+        (failure) => <PrayerTopic>[],
+        (allTopics) {
+          if (topicIds != null && topicIds.isNotEmpty) {
+            return allTopics.where((t) => topicIds.contains(t.id)).toList();
+          }
+          return allTopics;
+        },
+      );
+
+      // Check if focus mode is the default
+      final prefs = await settingsRepository.getPreferences(_userId);
+      final startInFocusMode = prefs.defaultFocusMode;
+
+      final session = PrayerSession(
+        id: _uuid.v4(),
+        userId: _userId,
+        startedAt: DateTime.now(),
+        topicsPrayed: topics.map((t) => t.id).toList(),
+      );
+
+      emit(state.copyWith(
+        session: session,
+        selectedTopics: topics,
+        phase: SessionPhase.adoration,
+        isFocusMode: startInFocusMode,
+        isLoading: false,
+      ));
+
+      // Load verse for the first phase
+      await _loadVerseForPhase(SessionPhase.adoration);
+    } catch (e) {
+      emit(state.copyWith(
+        isLoading: false,
+        errorMessage: 'Error al iniciar sesión: $e',
+      ));
     }
-    emit(state.copyWith(selectedTopics: current));
-  }
-
-  bool isTopicSelected(String topicId) {
-    return state.selectedTopics.any((t) => t.id == topicId);
-  }
-
-  void startSession() async {
-    if (state.selectedTopics.isEmpty) {
-      emit(state.copyWith(errorMessage: 'Selecciona al menos un tema'));
-      return;
-    }
-
-    // Check if focus mode is the default
-    final prefs = await settingsRepository.getPreferences(_userId);
-    final startInFocusMode = prefs.defaultFocusMode;
-
-    final session = PrayerSession(
-      id: _uuid.v4(),
-      userId: _userId,
-      startedAt: DateTime.now(),
-      topicsPrayed: state.selectedTopics.map((t) => t.id).toList(),
-    );
-
-    emit(state.copyWith(
-      session: session,
-      phase: SessionPhase.adoration,
-      isFocusMode: startInFocusMode,
-    ));
-
-    // Load verse for the first phase
-    await _loadVerseForPhase(SessionPhase.adoration);
   }
 
   Future<void> _loadVerseForPhase(SessionPhase phase) async {
@@ -114,7 +118,7 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
     final phases = SessionPhase.values;
     final currentIndex = phases.indexOf(state.phase);
 
-    if (currentIndex > 1) {
+    if (currentIndex > 0) {
       // Don't go before adoration
       final newPhase = phases[currentIndex - 1];
       emit(state.copyWith(phase: newPhase));
@@ -123,7 +127,7 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
   }
 
   void goToPhase(SessionPhase phase) async {
-    if (phase == SessionPhase.setup) return;
+    if (phase == SessionPhase.summary) return;
     emit(state.copyWith(phase: phase));
     await _loadVerseForPhase(phase);
   }

@@ -5,7 +5,7 @@ import '../../../prayer_topics/domain/entities/prayer_topic.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/entities/prayer_session.dart';
 
-enum SessionPhase { setup, adoration, confession, thanksgiving, supplication, summary }
+enum SessionPhase { adoration, confession, thanksgiving, supplication, summary }
 
 class PrayerSessionState extends Equatable {
   final SessionPhase phase;
@@ -20,7 +20,7 @@ class PrayerSessionState extends Equatable {
   final bool isFocusMode;
 
   const PrayerSessionState({
-    this.phase = SessionPhase.setup,
+    this.phase = SessionPhase.adoration,
     this.session,
     this.selectedTopics = const [],
     this.currentTopicIndex = 0,
@@ -41,8 +41,6 @@ class PrayerSessionState extends Equatable {
 
   String get phaseTitle {
     switch (phase) {
-      case SessionPhase.setup:
-        return 'Preparación';
       case SessionPhase.adoration:
         return 'Adoración';
       case SessionPhase.confession:
@@ -58,8 +56,6 @@ class PrayerSessionState extends Equatable {
 
   String get phaseDescription {
     switch (phase) {
-      case SessionPhase.setup:
-        return 'Selecciona los temas por los que deseas orar';
       case SessionPhase.adoration:
         return 'Alaba a Dios por quién es Él';
       case SessionPhase.confession:
@@ -75,8 +71,6 @@ class PrayerSessionState extends Equatable {
 
   double get progress {
     switch (phase) {
-      case SessionPhase.setup:
-        return 0.0;
       case SessionPhase.adoration:
         return 0.25;
       case SessionPhase.confession:
@@ -90,7 +84,7 @@ class PrayerSessionState extends Equatable {
     }
   }
 
-  bool get isSetup => phase == SessionPhase.setup;
+  bool get isSupplication => phase == SessionPhase.supplication;
   bool get isSummary => phase == SessionPhase.summary;
   bool get isAdoration => phase == SessionPhase.adoration;
 
