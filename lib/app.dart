@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 import 'core/router/app_router.dart';
+import 'core/widgets/app_lifecycle_wrapper.dart';
 import 'injection_container.dart';
 
 class SelahApp extends StatelessWidget {
@@ -21,6 +22,12 @@ class SelahApp extends StatelessWidget {
             darkTheme: SelahTheme.darkTheme,
             themeMode: themeMode,
             routerConfig: AppRouter.router,
+            builder: (context, child) {
+              return AppLifecycleWrapper(
+                showSplashOnResume: true,
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
           );
         },
       ),
