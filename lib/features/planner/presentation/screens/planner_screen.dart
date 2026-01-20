@@ -103,9 +103,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
                       // Navigate to prayer session with the plan's topics
                       final plan = state.getPlanForDate(state.selectedDate);
                       if (plan != null) {
-                        context.push(SelahRoutes.session, extra: plan.topicIds);
+                        context.go(SelahRoutes.session, extra: plan.topicIds);
                       } else {
-                        context.push(SelahRoutes.session);
+                        context.go(SelahRoutes.session);
                       }
                     },
                     onDeletePlan: state.getPlanForDate(state.selectedDate) != null

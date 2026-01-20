@@ -131,7 +131,7 @@ class _HomeContentState extends State<HomeContent> {
                   padding: const EdgeInsets.all(24),
                   child: _MainPrayerCard(
                     isDark: isDark,
-                    onTap: () => context.push(SelahRoutes.session),
+                    onTap: () => context.go(SelahRoutes.session),
                   ),
                 ),
               ),
@@ -276,10 +276,11 @@ class _MainPrayerCard extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(
-                    Icons.self_improvement_rounded,
-                    color: Colors.white,
-                    size: 32,
+                  child: const Center(
+                    child: Text(
+                      '📖',
+                      style: TextStyle(fontSize: 28),
+                    ),
                   ),
                 ),
                 const Spacer(),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 import '../../../../core/extensions/extensions.dart';
+import '../../../../core/router/selah_routes.dart';
 import '../../../bible/domain/entities/verse.dart';
 import '../../../categories/domain/entities/category.dart' as cat;
 import '../../../prayer_topics/domain/entities/prayer_topic.dart';
@@ -158,7 +160,7 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
         child: SelahButton(
           label: 'Finalizar',
           isFullWidth: true,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.go(SelahRoutes.home),
         ),
       );
     }
@@ -202,7 +204,7 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
 
   void _showExitDialog(BuildContext context, PrayerSessionState state) {
     if (state.isSetup) {
-      Navigator.of(context).pop();
+      context.go(SelahRoutes.home);
       return;
     }
 
@@ -219,7 +221,7 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
+              context.go(SelahRoutes.home);
             },
             child: const Text('Salir'),
           ),

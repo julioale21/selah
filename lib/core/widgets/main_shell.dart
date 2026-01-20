@@ -24,6 +24,7 @@ class MainShell extends StatelessWidget {
       bottomNavigationBar: _ModernBottomNav(
         currentIndex: navigationShell.currentIndex,
         onTap: (index) => navigationShell.goBranch(index),
+        onSettingsTap: () => context.push('/settings'),
         isDark: isDark,
         primaryColor: primaryColor,
       ),
@@ -34,12 +35,14 @@ class MainShell extends StatelessWidget {
 class _ModernBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
+  final VoidCallback onSettingsTap;
   final bool isDark;
   final Color primaryColor;
 
   const _ModernBottomNav({
     required this.currentIndex,
     required this.onTap,
+    required this.onSettingsTap,
     required this.isDark,
     required this.primaryColor,
   });
@@ -47,96 +50,112 @@ class _ModernBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      height: 90,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      height: 80,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
         children: [
-          // Main navigation bar
+          // Main navigation bar with notch
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  height: 70,
-                  decoration: BoxDecoration(
+            child: Container(
+              height: 64,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
                     color: isDark
-                        ? const Color(0xFF1A1A1A).withValues(alpha: 0.9)
-                        : Colors.white.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : Colors.black.withValues(alpha: 0.05),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                        ? Colors.black.withValues(alpha: 0.4)
+                        : primaryColor.withValues(alpha: 0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                    spreadRadius: 0,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _NavItem(
-                        icon: Icons.home_outlined,
-                        activeIcon: Icons.home_rounded,
-                        label: 'Inicio',
-                        isSelected: currentIndex == 0,
-                        onTap: () => onTap(0),
-                        isDark: isDark,
-                        primaryColor: primaryColor,
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [
+                                const Color(0xFF1E1E1E).withValues(alpha: 0.95),
+                                const Color(0xFF2A2A2A).withValues(alpha: 0.95),
+                              ]
+                            : [
+                                Colors.white.withValues(alpha: 0.95),
+                                const Color(0xFFF8F8F8).withValues(alpha: 0.95),
+                              ],
                       ),
-                      _NavItem(
-                        icon: Icons.book_outlined,
-                        activeIcon: Icons.book_rounded,
-                        label: 'Diario',
-                        isSelected: currentIndex == 2,
-                        onTap: () => onTap(2),
-                        isDark: isDark,
-                        primaryColor: primaryColor,
+                      borderRadius: BorderRadius.circular(32),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.white.withValues(alpha: 0.8),
+                        width: 1.5,
                       ),
-                      // Space for center button
-                      const SizedBox(width: 80),
-                      _NavItem(
-                        icon: Icons.bar_chart_outlined,
-                        activeIcon: Icons.bar_chart_rounded,
-                        label: 'Stats',
-                        isSelected: currentIndex == 3,
-                        onTap: () => onTap(3),
-                        isDark: isDark,
-                        primaryColor: primaryColor,
-                      ),
-                      _NavItem(
-                        icon: Icons.settings_outlined,
-                        activeIcon: Icons.settings_rounded,
-                        label: 'Ajustes',
-                        isSelected: false,
-                        onTap: () => context.push('/settings'),
-                        isDark: isDark,
-                        primaryColor: primaryColor,
-                      ),
-                    ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _NavItem(
+                          icon: Icons.home_rounded,
+                          label: 'Inicio',
+                          isSelected: currentIndex == 0,
+                          onTap: () => onTap(0),
+                          isDark: isDark,
+                          primaryColor: primaryColor,
+                        ),
+                        _NavItem(
+                          icon: Icons.menu_book_rounded,
+                          label: 'Diario',
+                          isSelected: currentIndex == 2,
+                          onTap: () => onTap(2),
+                          isDark: isDark,
+                          primaryColor: primaryColor,
+                        ),
+                        // Space for center button
+                        const SizedBox(width: 72),
+                        _NavItem(
+                          icon: Icons.insights_rounded,
+                          label: 'Stats',
+                          isSelected: currentIndex == 3,
+                          onTap: () => onTap(3),
+                          isDark: isDark,
+                          primaryColor: primaryColor,
+                        ),
+                        _NavItem(
+                          icon: Icons.tune_rounded,
+                          label: 'Ajustes',
+                          isSelected: false,
+                          onTap: onSettingsTap,
+                          isDark: isDark,
+                          primaryColor: primaryColor,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
 
-          // Center floating button
+          // Center floating prayer button
           Positioned(
-            bottom: 25,
+            bottom: 16,
             child: _CenterPrayerButton(
               isSelected: currentIndex == 1,
               onTap: () => onTap(1),
               primaryColor: primaryColor,
+              isDark: isDark,
             ),
           ),
         ],
@@ -145,9 +164,8 @@ class _ModernBottomNav extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _NavItem extends StatefulWidget {
   final IconData icon;
-  final IconData activeIcon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
@@ -156,7 +174,6 @@ class _NavItem extends StatelessWidget {
 
   const _NavItem({
     required this.icon,
-    required this.activeIcon,
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -165,87 +182,21 @@ class _NavItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? primaryColor.withValues(alpha: 0.15)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                size: 24,
-                color: isSelected
-                    ? primaryColor
-                    : (isDark ? Colors.white54 : Colors.black45),
-              ),
-            ),
-            const SizedBox(height: 2),
-            AutoSizeText(
-              label,
-              maxLines: 1,
-              minFontSize: 8,
-              maxFontSize: 10,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected
-                    ? primaryColor
-                    : (isDark ? Colors.white54 : Colors.black45),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<_NavItem> createState() => _NavItemState();
 }
 
-class _CenterPrayerButton extends StatefulWidget {
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Color primaryColor;
-
-  const _CenterPrayerButton({
-    required this.isSelected,
-    required this.onTap,
-    required this.primaryColor,
-  });
-
-  @override
-  State<_CenterPrayerButton> createState() => _CenterPrayerButtonState();
-}
-
-class _CenterPrayerButtonState extends State<_CenterPrayerButton>
-    with SingleTickerProviderStateMixin {
+class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _glowAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 150),
       vsync: this,
-    )..repeat(reverse: true);
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-
-    _glowAnimation = Tween<double>(begin: 0.3, end: 0.6).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -258,16 +209,140 @@ class _CenterPrayerButtonState extends State<_CenterPrayerButton>
 
   @override
   Widget build(BuildContext context) {
+    final color = widget.isSelected
+        ? widget.primaryColor
+        : (widget.isDark ? Colors.white60 : Colors.black54);
+
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _controller.reverse(),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: SizedBox(
+              width: 56,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: widget.isSelected
+                          ? widget.primaryColor.withValues(alpha: 0.15)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      size: 24,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  AutoSizeText(
+                    widget.label,
+                    maxLines: 1,
+                    minFontSize: 8,
+                    maxFontSize: 11,
+                    style: TextStyle(
+                      fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: color,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CenterPrayerButton extends StatefulWidget {
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color primaryColor;
+  final bool isDark;
+
+  const _CenterPrayerButton({
+    required this.isSelected,
+    required this.onTap,
+    required this.primaryColor,
+    required this.isDark,
+  });
+
+  @override
+  State<_CenterPrayerButton> createState() => _CenterPrayerButtonState();
+}
+
+class _CenterPrayerButtonState extends State<_CenterPrayerButton>
+    with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _tapController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _tapAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Subtle pulse animation
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    // Tap animation
+    _tapController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+
+    _tapAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
+      CurvedAnimation(parent: _tapController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _tapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller,
+      animation: Listenable.merge([_pulseController, _tapController]),
       builder: (context, child) {
         return GestureDetector(
-          onTap: widget.onTap,
+          onTapDown: (_) => _tapController.forward(),
+          onTapUp: (_) {
+            _tapController.reverse();
+            widget.onTap();
+          },
+          onTapCancel: () => _tapController.reverse(),
           child: Transform.scale(
-            scale: _scaleAnimation.value,
+            scale: _pulseAnimation.value * _tapAnimation.value,
             child: Container(
-              width: 72,
-              height: 72,
+              width: 64,
+              height: 64,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
@@ -275,45 +350,39 @@ class _CenterPrayerButtonState extends State<_CenterPrayerButton>
                   end: Alignment.bottomRight,
                   colors: [
                     widget.primaryColor,
-                    widget.primaryColor.withValues(alpha: 0.7),
+                    Color.lerp(widget.primaryColor, Colors.purple, 0.3)!,
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: widget.primaryColor.withValues(alpha: _glowAnimation.value),
-                    blurRadius: 24,
-                    spreadRadius: 4,
+                    color: widget.primaryColor.withValues(alpha: 0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                    spreadRadius: 0,
                   ),
                   BoxShadow(
-                    color: widget.primaryColor.withValues(alpha: 0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
+                    color: widget.primaryColor.withValues(alpha: 0.2),
+                    blurRadius: 24,
+                    offset: const Offset(0, 2),
+                    spreadRadius: 4,
                   ),
                 ],
               ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Inner ring
-                  Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        width: 2,
-                      ),
-                    ),
+              child: Container(
+                margin: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 1.5,
                   ),
-                  // Praying hands icon
-                  CustomPaint(
-                    size: const Size(32, 32),
-                    painter: _PrayingHandsPainter(
-                      color: Colors.white,
-                    ),
+                ),
+                child: const Center(
+                  child: Text(
+                    '🙏',
+                    style: TextStyle(fontSize: 26),
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -323,77 +392,3 @@ class _CenterPrayerButtonState extends State<_CenterPrayerButton>
   }
 }
 
-// Custom painter for praying hands icon
-class _PrayingHandsPainter extends CustomPainter {
-  final Color color;
-
-  _PrayingHandsPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final fillPaint = Paint()
-      ..color = color.withValues(alpha: 0.15)
-      ..style = PaintingStyle.fill;
-
-    final w = size.width;
-    final h = size.height;
-
-    // Left hand path
-    final leftHand = Path()
-      ..moveTo(w * 0.5, h * 0.15)
-      ..quadraticBezierTo(w * 0.25, h * 0.2, w * 0.2, h * 0.4)
-      ..quadraticBezierTo(w * 0.15, h * 0.55, w * 0.25, h * 0.7)
-      ..quadraticBezierTo(w * 0.35, h * 0.85, w * 0.5, h * 0.95);
-
-    // Right hand path (mirror)
-    final rightHand = Path()
-      ..moveTo(w * 0.5, h * 0.15)
-      ..quadraticBezierTo(w * 0.75, h * 0.2, w * 0.8, h * 0.4)
-      ..quadraticBezierTo(w * 0.85, h * 0.55, w * 0.75, h * 0.7)
-      ..quadraticBezierTo(w * 0.65, h * 0.85, w * 0.5, h * 0.95);
-
-    // Combined path for fill
-    final combinedPath = Path()
-      ..addPath(leftHand, Offset.zero)
-      ..lineTo(w * 0.5, h * 0.95)
-      ..addPath(rightHand, Offset.zero);
-
-    canvas.drawPath(combinedPath, fillPaint);
-    canvas.drawPath(leftHand, paint);
-    canvas.drawPath(rightHand, paint);
-
-    // Finger lines on left hand
-    canvas.drawLine(
-      Offset(w * 0.28, h * 0.35),
-      Offset(w * 0.35, h * 0.28),
-      paint..strokeWidth = 1.5,
-    );
-    canvas.drawLine(
-      Offset(w * 0.25, h * 0.45),
-      Offset(w * 0.32, h * 0.38),
-      paint,
-    );
-
-    // Finger lines on right hand (mirror)
-    canvas.drawLine(
-      Offset(w * 0.72, h * 0.35),
-      Offset(w * 0.65, h * 0.28),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(w * 0.75, h * 0.45),
-      Offset(w * 0.68, h * 0.38),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
