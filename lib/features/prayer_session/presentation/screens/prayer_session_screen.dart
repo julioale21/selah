@@ -172,10 +172,28 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
     if (state.isSummary) {
       return Padding(
         padding: const EdgeInsets.all(SelahSpacing.md),
-        child: SelahButton(
-          label: 'Volver al inicio',
-          isFullWidth: true,
-          onPressed: () => context.go(SelahRoutes.home),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SelahButton(
+              label: 'Nueva oración',
+              isFullWidth: true,
+              icon: Icons.replay,
+              onPressed: () {
+                context.read<PrayerSessionCubit>().reset();
+                context.read<SessionTimerCubit>().reset();
+                context.read<PrayerSessionCubit>().initializeSession();
+                context.read<SessionTimerCubit>().start();
+              },
+            ),
+            const SizedBox(height: SelahSpacing.sm),
+            SelahButton(
+              label: 'Volver al inicio',
+              variant: SelahButtonVariant.secondary,
+              isFullWidth: true,
+              onPressed: () => context.go(SelahRoutes.home),
+            ),
+          ],
         ),
       );
     }

@@ -233,6 +233,11 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
       if (state.entries.isNotEmpty) {
         await sessionRepository.saveJournalEntries(state.entries);
       }
+
+      // Increment prayer count for each topic prayed
+      for (final topic in state.selectedTopics) {
+        await topicRepository.incrementPrayerCount(topic.id);
+      }
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Error al guardar sesión: $e'));
     }

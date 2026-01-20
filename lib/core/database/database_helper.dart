@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'selah.db';
-  static const int _databaseVersion = 4;
+  static const int _databaseVersion = 5;
 
   Database? _database;
 
@@ -215,6 +215,34 @@ class DatabaseHelper {
       await db.execute("ALTER TABLE journal_entries ADD COLUMN type TEXT DEFAULT 'prayer'");
       await db.execute('ALTER TABLE journal_entries ADD COLUMN tags TEXT');
       await db.execute('ALTER TABLE journal_entries ADD COLUMN updated_at TEXT');
+    }
+
+    if (oldVersion < 5) {
+      // Recrear tabla answered_prayers para permitir topic_id NULL
+      await db.execute('''
+        CREATE TABLE answered_prayers_new (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          topic_id TEXT,
+          prayer_text TEXT NOT NULL,
+          answer_text TEXT,
+          prayed_at TEXT NOT NULL,
+          answered_at TEXT,
+          is_answered INTEGER DEFAULT 0,
+          FOREIGN KEY (topic_id) REFERENCES prayer_topics(id)
+        )
+      ''');
+
+      // Copiar datos existentes
+      await db.execute('''
+        INSERT INTO answered_prayers_new
+        SELECT id, user_id, topic_id, prayer_text, answer_text, prayed_at, answered_at, is_answered
+        FROM answered_prayers
+      ''');
+
+      // Eliminar tabla vieja y renombrar nueva
+      await db.execute('DROP TABLE answered_prayers');
+      await db.execute('ALTER TABLE answered_prayers_new RENAME TO answered_prayers');
     }
   }
 

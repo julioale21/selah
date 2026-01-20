@@ -41,15 +41,16 @@ class AnsweredPrayerModel extends AnsweredPrayer {
   }
 
   Map<String, dynamic> toMap() {
-    return {
+    final map = <String, dynamic>{
       'id': id,
       'user_id': userId,
-      'topic_id': topicId,
       'prayer_text': prayerText,
-      'answer_text': answerText,
       'prayed_at': prayedAt.toIso8601String(),
-      'answered_at': answeredAt?.toIso8601String(),
       'is_answered': isAnswered ? 1 : 0,
     };
+    if (topicId != null) map['topic_id'] = topicId;
+    if (answerText != null) map['answer_text'] = answerText;
+    if (answeredAt != null) map['answered_at'] = answeredAt!.toIso8601String();
+    return map;
   }
 }

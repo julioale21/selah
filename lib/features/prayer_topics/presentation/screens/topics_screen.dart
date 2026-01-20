@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 import '../../../../core/extensions/extensions.dart';
+import '../../../../core/router/selah_routes.dart';
 import '../../../categories/domain/entities/category.dart' as cat;
 import '../../../categories/presentation/cubit/categories_cubit.dart';
 import '../../../categories/presentation/cubit/categories_state.dart';
@@ -23,6 +25,21 @@ class _TopicsScreenState extends State<TopicsScreen> {
   @override
   void initState() {
     super.initState();
+    _loadData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload when navigating back to this screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadData();
+      }
+    });
+  }
+
+  void _loadData() {
     context.read<TopicsCubit>().loadTopics();
     context.read<CategoriesCubit>().loadCategories();
   }
@@ -92,9 +109,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
             return TopicListTile(
               topic: topic,
               category: category,
-              onTap: () {
-                // TODO: Navigate to topic detail or prayer session
-              },
+              onTap: () => context.go(SelahRoutes.session, extra: [topic.id]),
               onEdit: () => _showEditTopicDialog(context, topic, category),
               onDelete: () => _showDeleteConfirmation(context, topic),
             );

@@ -17,20 +17,41 @@ class JournalScreen extends StatefulWidget {
 }
 
 class _JournalScreenState extends State<JournalScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addObserver(this);
     context.read<JournalCubit>().loadAll();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Reload when app comes back to foreground
+      context.read<JournalCubit>().loadAll();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload when navigating back to this screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<JournalCubit>().loadAll();
+      }
+    });
   }
 
   @override
@@ -70,10 +91,6 @@ class _JournalScreenState extends State<JournalScreen>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddSheet(context),
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
@@ -87,17 +104,6 @@ class _JournalScreenState extends State<JournalScreen>
     );
   }
 
-  void _showAddSheet(BuildContext context) {
-    final isOnPrayersTab = _tabController.index == 1;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => BlocProvider.value(
-        value: context.read<JournalCubit>(),
-        child: isOnPrayersTab ? const _AddPrayerSheet() : const _AddEntrySheet(),
-      ),
-    );
-  }
 }
 
 class _JournalEntriesTab extends StatelessWidget {
@@ -111,45 +117,72 @@ class _JournalEntriesTab extends StatelessWidget {
 
         final entriesByDate = state.entriesByDate;
 
-        if (entriesByDate.isEmpty) {
-          return SelahEmptyState(
-            icon: Icons.book_outlined,
-            title: 'Sin entradas',
-            description: 'Comienza a escribir tus reflexiones y oraciones',
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(SelahSpacing.md),
-          itemCount: entriesByDate.length,
-          itemBuilder: (context, index) {
-            final date = entriesByDate.keys.elementAt(index);
-            final entries = entriesByDate[date]!;
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: SelahSpacing.sm),
-                  child: Text(
-                    _formatDate(date),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                  ),
+        return Column(
+          children: [
+            // Add entry button
+            Padding(
+              padding: const EdgeInsets.all(SelahSpacing.md),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showAddEntrySheet(context),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Agregar entrada'),
                 ),
-                ...entries.map((entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: SelahSpacing.sm),
-                      child: JournalEntryCard(
-                        entry: entry,
-                        onDelete: () => _confirmDelete(context, entry),
-                      ),
-                    )),
-              ],
-            );
-          },
+              ),
+            ),
+            Expanded(
+              child: entriesByDate.isEmpty
+                  ? SelahEmptyState(
+                      icon: Icons.book_outlined,
+                      title: 'Sin entradas',
+                      description: 'Comienza a escribir tus reflexiones y oraciones',
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: SelahSpacing.md),
+                      itemCount: entriesByDate.length,
+                      itemBuilder: (context, index) {
+                        final date = entriesByDate.keys.elementAt(index);
+                        final entries = entriesByDate[date]!;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: SelahSpacing.sm),
+                              child: Text(
+                                _formatDate(date),
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.outline,
+                                    ),
+                              ),
+                            ),
+                            ...entries.map((entry) => Padding(
+                                  padding: const EdgeInsets.only(bottom: SelahSpacing.sm),
+                                  child: JournalEntryCard(
+                                    entry: entry,
+                                    onDelete: () => _confirmDelete(context, entry),
+                                  ),
+                                )),
+                          ],
+                        );
+                      },
+                    ),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  void _showAddEntrySheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => BlocProvider.value(
+        value: context.read<JournalCubit>(),
+        child: const _AddEntrySheet(),
+      ),
     );
   }
 
@@ -215,6 +248,23 @@ class _PrayersTab extends StatelessWidget {
           length: 2,
           child: Column(
             children: [
+              // Add prayer button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  SelahSpacing.md,
+                  SelahSpacing.md,
+                  SelahSpacing.md,
+                  0,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showAddPrayerSheet(context),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Agregar petición'),
+                  ),
+                ),
+              ),
               Container(
                 margin: const EdgeInsets.all(SelahSpacing.md),
                 decoration: BoxDecoration(
@@ -252,6 +302,17 @@ class _PrayersTab extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showAddPrayerSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => BlocProvider.value(
+        value: context.read<JournalCubit>(),
+        child: const _AddPrayerSheet(),
+      ),
     );
   }
 }
