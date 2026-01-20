@@ -180,16 +180,6 @@ class _HomeContentState extends State<HomeContent> {
                         children: [
                           Expanded(
                             child: _QuickActionCard(
-                              icon: Icons.auto_stories_rounded,
-                              label: 'Versículos',
-                              color: const Color(0xFFE8A838),
-                              isDark: isDark,
-                              onTap: () => context.push(SelahRoutes.verses),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _QuickActionCard(
                               icon: Icons.category_rounded,
                               label: 'Categorías',
                               color: const Color(0xFF5BAE7D),
@@ -197,6 +187,8 @@ class _HomeContentState extends State<HomeContent> {
                               onTap: () => context.push(SelahRoutes.categories),
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          const Expanded(child: SizedBox()),
                         ],
                       ),
                     ],

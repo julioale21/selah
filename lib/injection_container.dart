@@ -44,7 +44,6 @@ import 'features/planner/presentation/cubit/planner_cubit.dart';
 import 'features/bible/data/datasources/verse_local_datasource.dart';
 import 'features/bible/data/repositories/verse_repository_impl.dart';
 import 'features/bible/domain/repositories/verse_repository.dart';
-import 'features/bible/presentation/cubit/verses_cubit.dart';
 
 // Journal feature
 import 'features/journal/data/datasources/journal_local_datasource.dart';
@@ -187,12 +186,6 @@ Future<void> init() async {
   sl.registerLazySingleton<VerseRepository>(
     () => VerseRepositoryImpl(localDataSource: sl()),
   );
-
-  // Cubit
-  sl.registerFactory(() => VersesCubit(
-        repository: sl(),
-        userService: sl(),
-      ));
 
   //! Features - Journal
   // Data sources

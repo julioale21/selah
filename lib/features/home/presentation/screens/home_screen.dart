@@ -68,11 +68,6 @@ class HomeScreen extends StatelessWidget {
                     label: const Text('Temas'),
                   ),
                   TextButton.icon(
-                    onPressed: () => context.push(SelahRoutes.verses),
-                    icon: const Icon(Icons.menu_book),
-                    label: const Text('Versículos'),
-                  ),
-                  TextButton.icon(
                     onPressed: () => context.push(SelahRoutes.journal),
                     icon: const Icon(Icons.book),
                     label: const Text('Diario'),
