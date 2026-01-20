@@ -483,6 +483,329 @@
       "verse_start": 15,
       "category": "súplica",
       "tags": ["súplica", "atención", "cuidado"]
+    },
+    {
+      "id": "v049",
+      "text_es": "Cree en el Señor Jesucristo, y serás salvo, tú y tu casa.",
+      "reference": "Hechos 16:31",
+      "book": "Hechos",
+      "chapter": 16,
+      "verse_start": 31,
+      "category": "familia",
+      "tags": ["familia", "salvación", "fe"]
+    },
+    {
+      "id": "v050",
+      "text_es": "Instruye al niño en su camino, y aun cuando fuere viejo no se apartará de él.",
+      "reference": "Proverbios 22:6",
+      "book": "Proverbios",
+      "chapter": 22,
+      "verse_start": 6,
+      "category": "familia",
+      "tags": ["familia", "hijos", "educación"]
+    },
+    {
+      "id": "v051",
+      "text_es": "Honra a tu padre y a tu madre, para que tus días se alarguen en la tierra que Jehová tu Dios te da.",
+      "reference": "Éxodo 20:12",
+      "book": "Éxodo",
+      "chapter": 20,
+      "verse_start": 12,
+      "category": "familia",
+      "tags": ["familia", "padres", "honra"]
+    },
+    {
+      "id": "v052",
+      "text_es": "Yo y mi casa serviremos a Jehová.",
+      "reference": "Josué 24:15",
+      "book": "Josué",
+      "chapter": 24,
+      "verse_start": 15,
+      "category": "familia",
+      "tags": ["familia", "servicio", "compromiso"]
+    },
+    {
+      "id": "v053",
+      "text_es": "Mirad cuál amor nos ha dado el Padre, para que seamos llamados hijos de Dios.",
+      "reference": "1 Juan 3:1",
+      "book": "1 Juan",
+      "chapter": 3,
+      "verse_start": 1,
+      "category": "familia",
+      "tags": ["familia", "amor", "identidad"]
+    },
+    {
+      "id": "v054",
+      "text_es": "El que ama a su mujer, a sí mismo se ama. Porque nadie aborreció jamás a su propia carne.",
+      "reference": "Efesios 5:28-29",
+      "book": "Efesios",
+      "chapter": 5,
+      "verse_start": 28,
+      "verse_end": 29,
+      "category": "familia",
+      "tags": ["familia", "matrimonio", "amor"]
+    },
+    {
+      "id": "v055",
+      "text_es": "Vosotros también sois edificados para morada de Dios en el Espíritu.",
+      "reference": "Efesios 2:22",
+      "book": "Efesios",
+      "chapter": 2,
+      "verse_start": 22,
+      "category": "iglesia",
+      "tags": ["iglesia", "comunidad", "espíritu"]
+    },
+    {
+      "id": "v056",
+      "text_es": "Porque donde están dos o tres congregados en mi nombre, allí estoy yo en medio de ellos.",
+      "reference": "Mateo 18:20",
+      "book": "Mateo",
+      "chapter": 18,
+      "verse_start": 20,
+      "category": "iglesia",
+      "tags": ["iglesia", "comunidad", "presencia"]
+    },
+    {
+      "id": "v057",
+      "text_es": "Y perseveraban en la doctrina de los apóstoles, en la comunión unos con otros, en el partimiento del pan y en las oraciones.",
+      "reference": "Hechos 2:42",
+      "book": "Hechos",
+      "chapter": 2,
+      "verse_start": 42,
+      "category": "iglesia",
+      "tags": ["iglesia", "comunión", "perseverancia"]
+    },
+    {
+      "id": "v058",
+      "text_es": "No dejando de congregarnos, como algunos tienen por costumbre, sino exhortándonos.",
+      "reference": "Hebreos 10:25",
+      "book": "Hebreos",
+      "chapter": 10,
+      "verse_start": 25,
+      "category": "iglesia",
+      "tags": ["iglesia", "comunidad", "ánimo"]
+    },
+    {
+      "id": "v059",
+      "text_es": "Vosotros sois la luz del mundo; una ciudad asentada sobre un monte no se puede esconder.",
+      "reference": "Mateo 5:14",
+      "book": "Mateo",
+      "chapter": 5,
+      "verse_start": 14,
+      "category": "iglesia",
+      "tags": ["iglesia", "testimonio", "luz"]
+    },
+    {
+      "id": "v060",
+      "text_es": "Y todo lo que hagáis, hacedlo de corazón, como para el Señor y no para los hombres.",
+      "reference": "Colosenses 3:23",
+      "book": "Colosenses",
+      "chapter": 3,
+      "verse_start": 23,
+      "category": "trabajo",
+      "tags": ["trabajo", "servicio", "excelencia"]
+    },
+    {
+      "id": "v061",
+      "text_es": "Jehová tu Dios te bendecirá en toda obra de tus manos.",
+      "reference": "Deuteronomio 14:29",
+      "book": "Deuteronomio",
+      "chapter": 14,
+      "verse_start": 29,
+      "category": "trabajo",
+      "tags": ["trabajo", "bendición", "provisión"]
+    },
+    {
+      "id": "v062",
+      "text_es": "Encomienda a Jehová tus obras, y tus pensamientos serán afirmados.",
+      "reference": "Proverbios 16:3",
+      "book": "Proverbios",
+      "chapter": 16,
+      "verse_start": 3,
+      "category": "trabajo",
+      "tags": ["trabajo", "confianza", "planes"]
+    },
+    {
+      "id": "v063",
+      "text_es": "El alma del perezoso desea, y nada alcanza; mas el alma de los diligentes será satisfecha.",
+      "reference": "Proverbios 13:4",
+      "book": "Proverbios",
+      "chapter": 13,
+      "verse_start": 4,
+      "category": "trabajo",
+      "tags": ["trabajo", "diligencia", "recompensa"]
+    },
+    {
+      "id": "v064",
+      "text_es": "Siervos, obedeced en todo a vuestros amos terrenales... temiendo a Dios.",
+      "reference": "Colosenses 3:22",
+      "book": "Colosenses",
+      "chapter": 3,
+      "verse_start": 22,
+      "category": "trabajo",
+      "tags": ["trabajo", "obediencia", "integridad"]
+    },
+    {
+      "id": "v065",
+      "text_es": "Amado, yo deseo que tú seas prosperado en todas las cosas, y que tengas salud, así como prospera tu alma.",
+      "reference": "3 Juan 1:2",
+      "book": "3 Juan",
+      "chapter": 1,
+      "verse_start": 2,
+      "category": "salud",
+      "tags": ["salud", "prosperidad", "bienestar"]
+    },
+    {
+      "id": "v066",
+      "text_es": "Él satisface con bien tu boca, de modo que te rejuvenezcas como el águila.",
+      "reference": "Salmos 103:5",
+      "book": "Salmos",
+      "chapter": 103,
+      "verse_start": 5,
+      "category": "salud",
+      "tags": ["salud", "renovación", "provisión"]
+    },
+    {
+      "id": "v067",
+      "text_es": "El es quien perdona todas tus iniquidades, el que sana todas tus dolencias.",
+      "reference": "Salmos 103:3",
+      "book": "Salmos",
+      "chapter": 103,
+      "verse_start": 3,
+      "category": "salud",
+      "tags": ["salud", "sanidad", "perdón"]
+    },
+    {
+      "id": "v068",
+      "text_es": "Mas yo haré venir sanidad para ti, y sanaré tus heridas, dice Jehová.",
+      "reference": "Jeremías 30:17",
+      "book": "Jeremías",
+      "chapter": 30,
+      "verse_start": 17,
+      "category": "salud",
+      "tags": ["salud", "sanidad", "restauración"]
+    },
+    {
+      "id": "v069",
+      "text_es": "Por sus llagas fuisteis sanados.",
+      "reference": "1 Pedro 2:24",
+      "book": "1 Pedro",
+      "chapter": 2,
+      "verse_start": 24,
+      "category": "salud",
+      "tags": ["salud", "sanidad", "cruz"]
+    },
+    {
+      "id": "v070",
+      "text_es": "¿Está alguno enfermo entre vosotros? Llame a los ancianos de la iglesia, y oren por él.",
+      "reference": "Santiago 5:14",
+      "book": "Santiago",
+      "chapter": 5,
+      "verse_start": 14,
+      "category": "salud",
+      "tags": ["salud", "oración", "iglesia"]
+    },
+    {
+      "id": "v071",
+      "text_es": "Escudríñame, oh Dios, y conoce mi corazón; pruébame y conoce mis pensamientos.",
+      "reference": "Salmos 139:23",
+      "book": "Salmos",
+      "chapter": 139,
+      "verse_start": 23,
+      "category": "personal",
+      "tags": ["personal", "corazón", "santidad"]
+    },
+    {
+      "id": "v072",
+      "text_es": "Te haré entender, y te enseñaré el camino en que debes andar; sobre ti fijaré mis ojos.",
+      "reference": "Salmos 32:8",
+      "book": "Salmos",
+      "chapter": 32,
+      "verse_start": 8,
+      "category": "personal",
+      "tags": ["personal", "guía", "dirección"]
+    },
+    {
+      "id": "v073",
+      "text_es": "Porque somos hechura suya, creados en Cristo Jesús para buenas obras.",
+      "reference": "Efesios 2:10",
+      "book": "Efesios",
+      "chapter": 2,
+      "verse_start": 10,
+      "category": "personal",
+      "tags": ["personal", "propósito", "identidad"]
+    },
+    {
+      "id": "v074",
+      "text_es": "Sé que también me conoces cabalmente, no fue encubierto de ti mi cuerpo.",
+      "reference": "Salmos 139:14-15",
+      "book": "Salmos",
+      "chapter": 139,
+      "verse_start": 14,
+      "verse_end": 15,
+      "category": "personal",
+      "tags": ["personal", "identidad", "creación"]
+    },
+    {
+      "id": "v075",
+      "text_es": "Transformaos por medio de la renovación de vuestro entendimiento.",
+      "reference": "Romanos 12:2",
+      "book": "Romanos",
+      "chapter": 12,
+      "verse_start": 2,
+      "category": "personal",
+      "tags": ["personal", "transformación", "mente"]
+    },
+    {
+      "id": "v076",
+      "text_es": "Si se humillare mi pueblo, sobre el cual mi nombre es invocado, y oraren... yo sanaré su tierra.",
+      "reference": "2 Crónicas 7:14",
+      "book": "2 Crónicas",
+      "chapter": 7,
+      "verse_start": 14,
+      "category": "nación",
+      "tags": ["nación", "arrepentimiento", "sanidad"]
+    },
+    {
+      "id": "v077",
+      "text_es": "Bienaventurada la nación cuyo Dios es Jehová, el pueblo que él escogió como heredad para sí.",
+      "reference": "Salmos 33:12",
+      "book": "Salmos",
+      "chapter": 33,
+      "verse_start": 12,
+      "category": "nación",
+      "tags": ["nación", "bendición", "elección"]
+    },
+    {
+      "id": "v078",
+      "text_es": "Exhorto ante todo, a que se hagan rogativas, oraciones, peticiones y acciones de gracias, por todos los hombres; por los reyes y por todos los que están en eminencia.",
+      "reference": "1 Timoteo 2:1-2",
+      "book": "1 Timoteo",
+      "chapter": 2,
+      "verse_start": 1,
+      "verse_end": 2,
+      "category": "nación",
+      "tags": ["nación", "autoridades", "oración"]
+    },
+    {
+      "id": "v079",
+      "text_es": "La justicia engrandece a la nación; mas el pecado es afrenta de las naciones.",
+      "reference": "Proverbios 14:34",
+      "book": "Proverbios",
+      "chapter": 14,
+      "verse_start": 34,
+      "category": "nación",
+      "tags": ["nación", "justicia", "rectitud"]
+    },
+    {
+      "id": "v080",
+      "text_es": "Y procurad la paz de la ciudad a la cual os hice transportar, y rogad por ella a Jehová.",
+      "reference": "Jeremías 29:7",
+      "book": "Jeremías",
+      "chapter": 29,
+      "verse_start": 7,
+      "category": "nación",
+      "tags": ["nación", "paz", "intercesión"]
     }
   ]
 }

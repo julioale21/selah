@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/database/database_helper.dart';
 import '../models/verse_model.dart';
@@ -197,9 +198,15 @@ class VerseLocalDataSourceImpl implements VerseLocalDataSource {
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
       final versesJson = jsonData['verses'] as List<dynamic>;
 
+      final db = await databaseHelper.database;
       for (final v in versesJson) {
         final verse = VerseModel.fromJson(v as Map<String, dynamic>);
-        await databaseHelper.insert('verses', verse.toMap());
+        // Use INSERT OR REPLACE to update existing verses or insert new ones
+        await db.insert(
+          'verses',
+          verse.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
     } catch (e) {
       throw Exception('Error loading verses from assets: $e');

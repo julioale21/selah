@@ -73,10 +73,11 @@ class _DailyPlanCardState extends State<DailyPlanCard> {
                         ),
                   ),
                 ),
-                if (!plan.isCompleted && widget.onDeletePlan != null)
+                if (widget.onDeletePlan != null)
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
                     onPressed: widget.onDeletePlan,
+                    tooltip: 'Eliminar plan',
                     color: Theme.of(context).colorScheme.error,
                   ),
               ],
@@ -106,17 +107,15 @@ class _DailyPlanCardState extends State<DailyPlanCard> {
               )).toList(),
             ),
 
-            if (!plan.isCompleted) ...[
-              const SizedBox(height: SelahSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: widget.onStartPrayer,
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Iniciar Oración'),
-                ),
+            const SizedBox(height: SelahSpacing.lg),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: widget.onStartPrayer,
+                icon: Icon(plan.isCompleted ? Icons.replay : Icons.play_arrow),
+                label: Text(plan.isCompleted ? 'Orar de nuevo' : 'Iniciar Oración'),
               ),
-            ],
+            ),
           ],
         ),
       ),

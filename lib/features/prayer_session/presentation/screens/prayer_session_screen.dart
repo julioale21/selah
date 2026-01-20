@@ -16,7 +16,9 @@ import '../widgets/prayer_prompt_card.dart';
 import '../widgets/session_timer_widget.dart';
 
 class PrayerSessionScreen extends StatefulWidget {
-  const PrayerSessionScreen({super.key});
+  final List<String>? topicIds;
+
+  const PrayerSessionScreen({super.key, this.topicIds});
 
   @override
   State<PrayerSessionScreen> createState() => _PrayerSessionScreenState();
@@ -24,17 +26,42 @@ class PrayerSessionScreen extends StatefulWidget {
 
 class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
   final TextEditingController _noteController = TextEditingController();
-  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Defer initialization to after the first frame
+    _checkAndStartSession();
+  }
+
+  @override
+  void didUpdateWidget(PrayerSessionScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _checkAndStartSession();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // This is called when the route changes
+    _checkAndStartSession();
+  }
+
+  void _checkAndStartSession() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_initialized) {
-        _initialized = true;
-        context.read<PrayerSessionCubit>().initializeSession();
-        context.read<SessionTimerCubit>().start();
+      if (!mounted) return;
+
+      final cubit = context.read<PrayerSessionCubit>();
+      final timerCubit = context.read<SessionTimerCubit>();
+      final state = cubit.state;
+
+      // Start a new session if:
+      // 1. We're in summary phase (previous session completed)
+      // 2. Or we haven't started yet (initial state with no session)
+      if (state.isSummary || state.session == null) {
+        cubit.reset();
+        timerCubit.reset();
+        cubit.initializeSession(topicIds: widget.topicIds);
+        timerCubit.start();
       }
     });
   }
@@ -146,7 +173,7 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
       return Padding(
         padding: const EdgeInsets.all(SelahSpacing.md),
         child: SelahButton(
-          label: 'Finalizar',
+          label: 'Volver al inicio',
           isFullWidth: true,
           onPressed: () => context.go(SelahRoutes.home),
         ),

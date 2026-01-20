@@ -153,6 +153,7 @@ Future<void> init() async {
         settingsRepository: sl(),
         sessionRepository: sl(),
         topicRepository: sl(),
+        categoryRepository: sl(),
       ));
 
   //! Features - Planner

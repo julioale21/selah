@@ -50,14 +50,17 @@ class AppRouter {
               GoRoute(
                 path: SelahRoutes.session,
                 name: SelahRoutes.sessionName,
-                builder: (context, state) => MultiBlocProvider(
-                  providers: [
-                    BlocProvider(create: (_) => sl<PrayerSessionCubit>()),
-                    BlocProvider(create: (_) => sl<SessionTimerCubit>()),
-                    BlocProvider(create: (_) => sl<TopicsCubit>()),
-                  ],
-                  child: const PrayerSessionScreen(),
-                ),
+                builder: (context, state) {
+                  final topicIds = state.extra as List<String>?;
+                  return MultiBlocProvider(
+                    providers: [
+                      BlocProvider(create: (_) => sl<PrayerSessionCubit>()),
+                      BlocProvider(create: (_) => sl<SessionTimerCubit>()),
+                      BlocProvider(create: (_) => sl<TopicsCubit>()),
+                    ],
+                    child: PrayerSessionScreen(topicIds: topicIds),
+                  );
+                },
               ),
             ],
           ),

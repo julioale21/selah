@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/services/user_service.dart';
 import '../../../bible/domain/repositories/verse_repository.dart';
+import '../../../categories/domain/repositories/category_repository.dart';
 import '../../../prayer_topics/domain/entities/prayer_topic.dart';
 import '../../../prayer_topics/domain/repositories/prayer_topic_repository.dart';
 import '../../../settings/domain/repositories/settings_repository.dart';
@@ -17,6 +18,7 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
   final SettingsRepository settingsRepository;
   final PrayerSessionRepository sessionRepository;
   final PrayerTopicRepository topicRepository;
+  final CategoryRepository categoryRepository;
   static const _uuid = Uuid();
 
   PrayerSessionCubit({
@@ -25,6 +27,7 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
     required this.settingsRepository,
     required this.sessionRepository,
     required this.topicRepository,
+    required this.categoryRepository,
   }) : super(const PrayerSessionState());
 
   String get _userId => userService.currentUserId;
@@ -34,6 +37,9 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
     emit(state.copyWith(isLoading: true));
 
     try {
+      // Ensure verses are seeded/updated
+      await verseRepository.seedVersesFromJson();
+
       // Load topics - either specific ones or all
       final topicsResult = await topicRepository.getTopics(_userId);
 
@@ -77,11 +83,48 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
   }
 
   Future<void> _loadVerseForPhase(SessionPhase phase) async {
+    // In Supplication phase, load verse based on current topic's category
+    if (phase == SessionPhase.supplication) {
+      await _loadVerseForCurrentTopic();
+      return;
+    }
+
     final category = _getCategoryForPhase(phase);
     if (category == null) return;
 
     final verse = await verseRepository.getRandomVerseByCategory(category);
     emit(state.copyWith(currentVerse: verse, clearVerse: verse == null));
+  }
+
+  Future<void> _loadVerseForCurrentTopic() async {
+    final topic = state.currentTopic;
+    if (topic == null || topic.categoryId == null) {
+      // Fall back to generic supplication verse
+      final verse = await verseRepository.getRandomVerseByCategory('súplica');
+      emit(state.copyWith(currentVerse: verse, clearVerse: verse == null));
+      return;
+    }
+
+    // Get the category name from the topic's categoryId
+    final categoryResult = await categoryRepository.getCategoryById(topic.categoryId!);
+    final categoryName = categoryResult.fold(
+      (failure) => null,
+      (category) => category.name.toLowerCase(),
+    );
+
+    if (categoryName != null) {
+      // Try to get a verse for this specific category
+      var verse = await verseRepository.getRandomVerseByCategory(categoryName);
+
+      // If no verse found for this category, fall back to supplication
+      verse ??= await verseRepository.getRandomVerseByCategory('súplica');
+
+      emit(state.copyWith(currentVerse: verse, clearVerse: verse == null));
+    } else {
+      // Fall back to generic supplication verse
+      final verse = await verseRepository.getRandomVerseByCategory('súplica');
+      emit(state.copyWith(currentVerse: verse, clearVerse: verse == null));
+    }
   }
 
   String? _getCategoryForPhase(SessionPhase phase) {
@@ -100,7 +143,11 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
   }
 
   Future<void> refreshVerse() async {
-    await _loadVerseForPhase(state.phase);
+    if (state.isSupplication) {
+      await _loadVerseForCurrentTopic();
+    } else {
+      await _loadVerseForPhase(state.phase);
+    }
   }
 
   void nextPhase() async {
@@ -156,15 +203,17 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
     ));
   }
 
-  void nextTopic() {
+  void nextTopic() async {
     if (state.currentTopicIndex < state.selectedTopics.length - 1) {
       emit(state.copyWith(currentTopicIndex: state.currentTopicIndex + 1));
+      await _loadVerseForCurrentTopic();
     }
   }
 
-  void previousTopic() {
+  void previousTopic() async {
     if (state.currentTopicIndex > 0) {
       emit(state.copyWith(currentTopicIndex: state.currentTopicIndex - 1));
+      await _loadVerseForCurrentTopic();
     }
   }
 
