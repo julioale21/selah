@@ -175,60 +175,69 @@ class _TopicsScreenState extends State<TopicsScreen> {
   }
 
   void _showFilterSheet(BuildContext context) {
+    final topicsCubit = context.read<TopicsCubit>();
+    final categoriesCubit = context.read<CategoriesCubit>();
+
     showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return BlocBuilder<CategoriesCubit, CategoriesState>(
-          builder: (context, categoriesState) {
-            return BlocBuilder<TopicsCubit, TopicsState>(
-              builder: (context, topicsState) {
-                return Container(
-                  padding: const EdgeInsets.all(SelahSpacing.lg),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Filtrar por categoría',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: SelahSpacing.md),
-                      Wrap(
-                        spacing: SelahSpacing.xs,
-                        runSpacing: SelahSpacing.xs,
-                        children: [
-                          FilterChip(
-                            label: const Text('Todos'),
-                            selected: topicsState.selectedCategoryId == null,
-                            onSelected: (_) {
-                              context.read<TopicsCubit>().filterByCategory(null);
-                              Navigator.pop(context);
-                            },
-                          ),
-                          ...categoriesState.categories.map((category) {
-                            return FilterChip(
-                              avatar: Icon(
-                                category.icon,
-                                size: 18,
-                                color: category.color,
-                              ),
-                              label: Text(category.name),
-                              selected: topicsState.selectedCategoryId == category.id,
+      builder: (sheetContext) {
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: topicsCubit),
+            BlocProvider.value(value: categoriesCubit),
+          ],
+          child: BlocBuilder<CategoriesCubit, CategoriesState>(
+            builder: (context, categoriesState) {
+              return BlocBuilder<TopicsCubit, TopicsState>(
+                builder: (context, topicsState) {
+                  return Container(
+                    padding: const EdgeInsets.all(SelahSpacing.lg),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Filtrar por categoría',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: SelahSpacing.md),
+                        Wrap(
+                          spacing: SelahSpacing.xs,
+                          runSpacing: SelahSpacing.xs,
+                          children: [
+                            FilterChip(
+                              label: const Text('Todos'),
+                              selected: topicsState.selectedCategoryId == null,
                               onSelected: (_) {
-                                context.read<TopicsCubit>().filterByCategory(category.id);
+                                context.read<TopicsCubit>().filterByCategory(null);
                                 Navigator.pop(context);
                               },
-                            );
-                          }),
-                        ],
-                      ),
-                      const SizedBox(height: SelahSpacing.lg),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+                            ),
+                            ...categoriesState.categories.map((category) {
+                              return FilterChip(
+                                avatar: Icon(
+                                  category.icon,
+                                  size: 18,
+                                  color: category.color,
+                                ),
+                                label: Text(category.name),
+                                selected: topicsState.selectedCategoryId == category.id,
+                                onSelected: (_) {
+                                  context.read<TopicsCubit>().filterByCategory(category.id);
+                                  Navigator.pop(context);
+                                },
+                              );
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: SelahSpacing.lg),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );
