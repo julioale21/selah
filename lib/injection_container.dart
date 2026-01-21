@@ -3,6 +3,7 @@ import 'package:selah_ui_kit/selah_ui_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/database/database_helper.dart';
+import 'core/services/home_refresh_service.dart';
 import 'core/services/prayer_session_service.dart';
 import 'core/services/user_service.dart';
 
@@ -65,6 +66,12 @@ import 'features/stats/data/repositories/stats_repository_impl.dart';
 import 'features/stats/domain/repositories/stats_repository.dart';
 import 'features/stats/presentation/cubit/stats_cubit.dart';
 
+// Goals feature
+import 'features/goals/data/datasources/goals_local_datasource.dart';
+import 'features/goals/data/repositories/goals_repository_impl.dart';
+import 'features/goals/domain/repositories/goals_repository.dart';
+import 'features/goals/presentation/cubit/goals_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> init() async {
@@ -76,6 +83,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => DatabaseHelper());
   sl.registerLazySingleton(() => UserService(sl()));
   sl.registerLazySingleton(() => PrayerSessionService());
+  sl.registerLazySingleton(() => HomeRefreshService());
 
   //! Theme
   sl.registerFactory(() => ThemeCubit(sl()));
@@ -239,6 +247,23 @@ Future<void> init() async {
 
   // Cubit
   sl.registerFactory(() => StatsCubit(
+        repository: sl(),
+        userService: sl(),
+      ));
+
+  //! Features - Goals
+  // Data sources
+  sl.registerLazySingleton<GoalsLocalDataSource>(
+    () => GoalsLocalDataSourceImpl(databaseHelper: sl()),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<GoalsRepository>(
+    () => GoalsRepositoryImpl(localDataSource: sl()),
+  );
+
+  // Cubit
+  sl.registerFactory(() => GoalsCubit(
         repository: sl(),
         userService: sl(),
       ));

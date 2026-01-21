@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../core/router/selah_routes.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/settings_state.dart';
 
@@ -78,6 +80,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     // Prayer section
                     _buildSectionHeader(context, 'Oración'),
+                    ListTile(
+                      leading: const Icon(Icons.flag_rounded),
+                      title: const Text('Meta de oración'),
+                      subtitle: const Text('Establece tu objetivo diario'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push(SelahRoutes.goals),
+                    ),
                     _SessionDurationTile(
                       currentMinutes: state.preferences.defaultSessionMinutes,
                       onChanged: (minutes) => context

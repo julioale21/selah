@@ -6,6 +6,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../../core/extensions/extensions.dart';
 import '../../../../core/router/selah_routes.dart';
+import '../../../../core/services/home_refresh_service.dart';
 import '../../../../core/services/prayer_session_service.dart';
 import '../../../../injection_container.dart';
 import '../../../bible/domain/entities/verse.dart';
@@ -269,7 +270,10 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen>
               label: 'Volver al inicio',
               variant: SelahButtonVariant.secondary,
               isFullWidth: true,
-              onPressed: () => context.go(SelahRoutes.home),
+              onPressed: () {
+                sl<HomeRefreshService>().triggerRefresh();
+                context.go(SelahRoutes.home);
+              },
             ),
           ],
         ),
@@ -384,6 +388,7 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen>
             onPressed: () {
               Navigator.of(ctx).pop();
               _endSessionAndCleanup();
+              sl<HomeRefreshService>().triggerRefresh();
               context.go(SelahRoutes.home);
             },
             child: const Text('Salir'),

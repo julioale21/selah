@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../injection_container.dart';
+import '../services/home_refresh_service.dart';
 import '../services/prayer_session_service.dart';
 
 class MainShell extends StatelessWidget {
@@ -22,6 +23,10 @@ class MainShell extends StatelessWidget {
       _showExitSessionDialog(context, index);
     } else {
       navigationShell.goBranch(index);
+      // Trigger home refresh when navigating to home tab
+      if (index == 0) {
+        sl<HomeRefreshService>().triggerRefresh();
+      }
     }
   }
 

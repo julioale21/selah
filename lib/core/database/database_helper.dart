@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'selah.db';
-  static const int _databaseVersion = 6;
+  static const int _databaseVersion = 7;
 
   Database? _database;
 
@@ -172,6 +172,19 @@ class DatabaseHelper {
       )
     ''');
 
+    // Tabla de metas de oración
+    await db.execute('''
+      CREATE TABLE prayer_goals (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        goal_type TEXT NOT NULL,
+        target_minutes INTEGER NOT NULL,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
+
     // Crear índices para mejorar performance
     await db.execute('CREATE INDEX idx_categories_user ON categories(user_id)');
     await db.execute('CREATE INDEX idx_topics_user ON prayer_topics(user_id)');
@@ -182,6 +195,7 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_verses_category ON verses(category)');
     await db.execute('CREATE INDEX idx_plans_user_date ON daily_plans(user_id, date)');
     await db.execute('CREATE INDEX idx_answered_user ON answered_prayers(user_id)');
+    await db.execute('CREATE INDEX idx_goals_user ON prayer_goals(user_id)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -249,6 +263,22 @@ class DatabaseHelper {
     if (oldVersion < 6) {
       // Agregar columna sort_order a prayer_topics
       await db.execute('ALTER TABLE prayer_topics ADD COLUMN sort_order INTEGER DEFAULT 0');
+    }
+
+    if (oldVersion < 7) {
+      // Crear tabla de metas de oración
+      await db.execute('''
+        CREATE TABLE prayer_goals (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          goal_type TEXT NOT NULL,
+          target_minutes INTEGER NOT NULL,
+          is_active INTEGER DEFAULT 1,
+          created_at TEXT NOT NULL,
+          updated_at TEXT
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_goals_user ON prayer_goals(user_id)');
     }
   }
 
@@ -346,6 +376,7 @@ class DatabaseHelper {
       await txn.delete('prayer_sessions', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('prayer_topics', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('categories', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('prayer_goals', where: 'user_id = ?', whereArgs: [userId]);
     });
   }
 }

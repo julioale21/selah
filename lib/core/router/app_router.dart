@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/categories/presentation/cubit/categories_cubit.dart';
 import '../../features/categories/presentation/screens/categories_screen.dart';
+import '../../features/goals/presentation/cubit/goals_cubit.dart';
+import '../../features/goals/presentation/screens/goals_screen.dart';
 import '../../features/home/presentation/screens/home_content.dart';
 import '../../features/journal/presentation/cubit/journal_cubit.dart';
 import '../../features/journal/presentation/screens/journal_screen.dart';
@@ -128,6 +130,14 @@ class AppRouter {
             create: (_) => sl<SettingsCubit>(),
             child: const SettingsScreen(),
           ),
+        ),
+      ),
+      GoRoute(
+        path: SelahRoutes.goals,
+        name: SelahRoutes.goalsName,
+        builder: (context, state) => BlocProvider(
+          create: (_) => sl<GoalsCubit>(),
+          child: const GoalsScreen(),
         ),
       ),
     ],

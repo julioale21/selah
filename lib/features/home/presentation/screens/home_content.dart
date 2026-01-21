@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 import '../../../../core/router/selah_routes.dart';
+import '../../../../core/services/home_refresh_service.dart';
 import '../../../../core/services/user_service.dart';
 import '../../../../injection_container.dart';
+import '../../../goals/domain/entities/goal_progress.dart';
+import '../../../goals/domain/repositories/goals_repository.dart';
+import '../../../goals/presentation/widgets/goal_progress_card.dart';
 import '../../../stats/domain/entities/streak_info.dart';
 import '../../../stats/domain/repositories/stats_repository.dart';
 
@@ -16,14 +22,46 @@ class HomeContent extends StatefulWidget {
   State<HomeContent> createState() => _HomeContentState();
 }
 
-class _HomeContentState extends State<HomeContent> {
+class _HomeContentState extends State<HomeContent> with WidgetsBindingObserver {
   StreakInfo _streakInfo = const StreakInfo();
+  GoalProgress? _goalProgress;
   bool _isLoading = true;
+  bool _goalDataLoaded = false;
+  StreamSubscription<void>? _refreshSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadStreakInfo();
+    WidgetsBinding.instance.addObserver(this);
+
+    // Listen for refresh events from tab navigation
+    _refreshSubscription = sl<HomeRefreshService>().onRefresh.listen((_) {
+      _loadData();
+    });
+
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh data when app comes back to foreground
+    if (state == AppLifecycleState.resumed) {
+      _loadData();
+    }
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([
+      _loadStreakInfo(),
+      _loadGoalProgress(),
+    ]);
   }
 
   Future<void> _loadStreakInfo() async {
@@ -44,6 +82,38 @@ class _HomeContentState extends State<HomeContent> {
     }
   }
 
+  Future<void> _loadGoalProgress() async {
+    try {
+      final goalsRepo = sl<GoalsRepository>();
+      final userId = sl<UserService>().currentUserId;
+
+      // Get the daily progress (includes goal info)
+      final result = await goalsRepo.getDailyProgress(userId);
+      result.fold(
+        (failure) {},
+        (progress) {
+          if (mounted) {
+            setState(() {
+              _goalProgress = progress;
+            });
+          }
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _goalDataLoaded = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _goalDataLoaded = true;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -53,7 +123,7 @@ class _HomeContentState extends State<HomeContent> {
       backgroundColor: isDark ? const Color(0xFF0D1117) : const Color(0xFFF8F9FA),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadStreakInfo,
+          onRefresh: _loadData,
           child: CustomScrollView(
             slivers: [
               // Header
@@ -124,6 +194,29 @@ class _HomeContentState extends State<HomeContent> {
                   ),
                 ),
               ),
+
+              // Goal progress card
+              if (_goalDataLoaded)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                    child: _goalProgress != null
+                        ? GoalProgressCard(
+                            progress: _goalProgress!,
+                            onTap: () async {
+                              await context.push(SelahRoutes.goals);
+                              _loadData(); // Refresh when returning
+                            },
+                          )
+                        : _SetGoalCard(
+                            isDark: isDark,
+                            onTap: () async {
+                              await context.push(SelahRoutes.goals);
+                              _loadData(); // Refresh when returning
+                            },
+                          ),
+                  ),
+                ),
 
               // Main prayer card
               SliverToBoxAdapter(
@@ -555,6 +648,94 @@ class _ACTSInfoCard extends StatelessWidget {
                 ),
               )),
         ],
+      ),
+    );
+  }
+}
+
+class _SetGoalCard extends StatelessWidget {
+  final bool isDark;
+  final VoidCallback? onTap;
+
+  const _SetGoalCard({
+    required this.isDark,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.06),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    SelahColors.supplication,
+                    SelahColors.supplication.withValues(alpha: 0.7),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.flag_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Establece tu meta diaria',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Define minutos de oración por día',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark ? Colors.white54 : Colors.black45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: isDark ? Colors.white38 : Colors.black26,
+            ),
+          ],
+        ),
       ),
     );
   }
