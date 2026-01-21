@@ -96,11 +96,8 @@ class _DailyPlanCardState extends State<DailyPlanCard> {
               spacing: SelahSpacing.xs,
               runSpacing: SelahSpacing.xs,
               children: planTopics.map((topic) => Chip(
-                avatar: Icon(
-                  IconData(
-                    int.tryParse(topic.iconName) ?? Icons.circle.codePoint,
-                    fontFamily: 'MaterialIcons',
-                  ),
+                avatar: const Icon(
+                  Icons.bookmark,
                   size: 18,
                 ),
                 label: Text(topic.title),
@@ -156,11 +153,8 @@ class _DailyPlanCardState extends State<DailyPlanCard> {
                 runSpacing: SelahSpacing.xs,
                 children: widget.suggestedTopics.map((topic) => FilterChip(
                   selected: _selectedTopicIds.contains(topic.id),
-                  avatar: Icon(
-                    IconData(
-                      int.tryParse(topic.iconName) ?? Icons.circle.codePoint,
-                      fontFamily: 'MaterialIcons',
-                    ),
+                  avatar: const Icon(
+                    Icons.bookmark,
                     size: 18,
                   ),
                   label: Text(topic.title),
@@ -190,11 +184,8 @@ class _DailyPlanCardState extends State<DailyPlanCard> {
                       .where((t) => !widget.suggestedTopics.any((s) => s.id == t.id))
                       .map((topic) => FilterChip(
                             selected: _selectedTopicIds.contains(topic.id),
-                            avatar: Icon(
-                              IconData(
-                                int.tryParse(topic.iconName) ?? Icons.circle.codePoint,
-                                fontFamily: 'MaterialIcons',
-                              ),
+                            avatar: const Icon(
+                              Icons.bookmark,
                               size: 18,
                             ),
                             label: Text(topic.title),

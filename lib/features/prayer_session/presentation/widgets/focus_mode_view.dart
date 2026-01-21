@@ -73,10 +73,10 @@ class FocusModeView extends StatelessWidget {
               ),
             ),
 
-            // Main content
+            // Main content with fixed header and footer
             Column(
               children: [
-                // Header with exit button
+                // Fixed Header with exit button
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: SelahSpacing.md,
@@ -106,68 +106,85 @@ class FocusModeView extends StatelessWidget {
                   ),
                 ),
 
-                const Spacer(flex: 2),
+                // Scrollable content area
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: SelahSpacing.xl),
 
-                // Phase label with elegant styling
-                _PhaseChip(phase: state.phase, color: phaseColor),
+                        // Phase label with elegant styling
+                        _PhaseChip(phase: state.phase, color: phaseColor),
 
-                const SizedBox(height: SelahSpacing.xxl),
+                        const SizedBox(height: SelahSpacing.xxl),
 
-                // Large timer - centered and prominent
-                BlocBuilder<SessionTimerCubit, SessionTimerState>(
-                  builder: (context, timerState) {
-                    return _LargeTimer(
-                      elapsedSeconds: timerState.elapsedSeconds,
-                      textColor: textColor,
-                    );
-                  },
-                ),
+                        // Large timer - centered and prominent
+                        BlocBuilder<SessionTimerCubit, SessionTimerState>(
+                          builder: (context, timerState) {
+                            return _LargeTimer(
+                              elapsedSeconds: timerState.elapsedSeconds,
+                              textColor: textColor,
+                            );
+                          },
+                        ),
 
-                const SizedBox(height: SelahSpacing.xxl),
+                        const SizedBox(height: SelahSpacing.xxl),
 
-                // Current topic - only show in Supplication phase
-                if (state.isSupplication && state.currentTopic != null)
-                  _TopicDisplay(
-                    topic: state.currentTopic!,
-                    currentIndex: state.currentTopicIndex,
-                    totalTopics: state.selectedTopics.length,
-                    phaseColor: phaseColor,
-                    textColor: textColor,
-                    subtleTextColor: subtleTextColor,
+                        // Current topic - only show in Supplication phase
+                        if (state.isSupplication && state.currentTopic != null)
+                          _TopicDisplay(
+                            topic: state.currentTopic!,
+                            currentIndex: state.currentTopicIndex,
+                            totalTopics: state.selectedTopics.length,
+                            phaseColor: phaseColor,
+                            textColor: textColor,
+                            subtleTextColor: subtleTextColor,
+                          ),
+
+                        const SizedBox(height: SelahSpacing.xxl),
+
+                        // Verse card
+                        if (state.currentVerse != null)
+                          _VerseCard(
+                            verse: state.currentVerse!,
+                            phaseColor: phaseColor,
+                            isDark: isDark,
+                            onRefresh: () =>
+                                context.read<PrayerSessionCubit>().refreshVerse(),
+                          ),
+
+                        const SizedBox(height: SelahSpacing.xl),
+                      ],
+                    ),
                   ),
-
-                const Spacer(flex: 2),
-
-                // Verse card
-                if (state.currentVerse != null)
-                  _VerseCard(
-                    verse: state.currentVerse!,
-                    phaseColor: phaseColor,
-                    isDark: isDark,
-                    onRefresh: () =>
-                        context.read<PrayerSessionCubit>().refreshVerse(),
-                  ),
-
-                const SizedBox(height: SelahSpacing.xl),
-
-                // Phase dots
-                _PhaseDots(
-                  currentPhase: state.phase,
-                  onPhaseTap: (phase) {
-                    context.read<PrayerSessionCubit>().goToPhase(phase);
-                  },
                 ),
 
-                const SizedBox(height: SelahSpacing.lg),
+                // Fixed bottom section
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Phase dots
+                    _PhaseDots(
+                      currentPhase: state.phase,
+                      onPhaseTap: (phase) {
+                        context.read<PrayerSessionCubit>().goToPhase(phase);
+                      },
+                    ),
 
-                // Navigation
-                _NavigationBar(
-                  state: state,
-                  phaseColor: phaseColor,
-                  isDark: isDark,
+                    const SizedBox(height: SelahSpacing.lg),
+
+                    // Navigation
+                    _NavigationBar(
+                      state: state,
+                      phaseColor: phaseColor,
+                      isDark: isDark,
+                    ),
+
+                    // Extra padding for bottom menu
+                    const SizedBox(height: SelahSpacing.xxl + SelahSpacing.xl),
+                  ],
                 ),
-
-                const SizedBox(height: SelahSpacing.lg),
               ],
             ),
           ],

@@ -3,6 +3,7 @@ import 'package:selah_ui_kit/selah_ui_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/database/database_helper.dart';
+import 'core/services/prayer_session_service.dart';
 import 'core/services/user_service.dart';
 
 // Categories feature
@@ -73,6 +74,7 @@ Future<void> init() async {
   //! Core
   sl.registerLazySingleton(() => DatabaseHelper());
   sl.registerLazySingleton(() => UserService(sl()));
+  sl.registerLazySingleton(() => PrayerSessionService());
 
   //! Theme
   sl.registerFactory(() => ThemeCubit(sl()));

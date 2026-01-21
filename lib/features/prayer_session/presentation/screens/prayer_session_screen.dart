@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../../core/extensions/extensions.dart';
 import '../../../../core/router/selah_routes.dart';
+import '../../../../core/services/prayer_session_service.dart';
+import '../../../../injection_container.dart';
 import '../../../bible/domain/entities/verse.dart';
 import '../../../prayer_topics/domain/entities/prayer_topic.dart';
 import '../cubit/prayer_session_cubit.dart';
@@ -24,12 +27,16 @@ class PrayerSessionScreen extends StatefulWidget {
   State<PrayerSessionScreen> createState() => _PrayerSessionScreenState();
 }
 
-class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
+class _PrayerSessionScreenState extends State<PrayerSessionScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _noteController = TextEditingController();
+  final PrayerSessionService _sessionService = sl<PrayerSessionService>();
+  bool _wasRunningBeforeBackground = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkAndStartSession();
   }
 
@@ -42,8 +49,40 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // This is called when the route changes
     _checkAndStartSession();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (!mounted) return;
+
+    final timerCubit = context.read<SessionTimerCubit>();
+    final sessionState = context.read<PrayerSessionCubit>().state;
+
+    // Only handle lifecycle if session is active (not in summary)
+    if (sessionState.isSummary) return;
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        // App going to background - pause timer but keep session
+        _wasRunningBeforeBackground = timerCubit.state.isRunning;
+        if (_wasRunningBeforeBackground) {
+          timerCubit.pause();
+        }
+        break;
+      case AppLifecycleState.resumed:
+        // App coming back - resume timer if it was running
+        if (_wasRunningBeforeBackground) {
+          timerCubit.resume();
+        }
+        break;
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        break;
+    }
   }
 
   void _checkAndStartSession() {
@@ -62,25 +101,53 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
         timerCubit.reset();
         cubit.initializeSession(topicIds: widget.topicIds);
         timerCubit.start();
+
+        // Enable wakelock and mark session as active
+        WakelockPlus.enable();
+        _sessionService.startSession();
       }
     });
   }
 
+  void _endSessionAndCleanup() {
+    // Disable wakelock and mark session as inactive
+    WakelockPlus.disable();
+    _sessionService.endSession();
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _noteController.dispose();
+    // Don't disable wakelock here - let the session finish naturally
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<PrayerSessionCubit, PrayerSessionState>(
-      listener: (context, state) {
-        if (state.errorMessage != null) {
-          context.showSnackBar(state.errorMessage!, isError: true);
-          context.read<PrayerSessionCubit>().clearError();
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<PrayerSessionCubit, PrayerSessionState>(
+          listener: (context, state) {
+            if (state.errorMessage != null) {
+              context.showSnackBar(state.errorMessage!, isError: true);
+              context.read<PrayerSessionCubit>().clearError();
+            }
+
+            // When session transitions to summary, cleanup wakelock
+            if (state.isSummary) {
+              _endSessionAndCleanup();
+            }
+          },
+        ),
+        BlocListener<SessionTimerCubit, SessionTimerState>(
+          listener: (context, timerState) {
+            // Sync elapsed time with the global service
+            _sessionService.updateElapsedTime(timerState.elapsedSeconds);
+          },
+        ),
+      ],
+      child: BlocBuilder<PrayerSessionCubit, PrayerSessionState>(
       builder: (context, state) {
         // Show loading
         if (state.isLoading) {
@@ -89,57 +156,68 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
           );
         }
 
-        // Show focus mode view when active
-        if (state.isFocusMode && !state.isSummary) {
-          return FocusModeView(
-            state: state,
-            onExit: () => context.read<PrayerSessionCubit>().exitFocusMode(),
-          );
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(_getTitle(state)),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => _showExitDialog(context),
-            ),
-            actions: [
-              if (!state.isSummary) ...[
-                IconButton(
-                  icon: const Icon(Icons.fullscreen),
-                  tooltip: 'Modo enfocado',
-                  onPressed: () =>
-                      context.read<PrayerSessionCubit>().toggleFocusMode(),
-                ),
-                const SessionTimerWidget(),
-              ],
-            ],
-          ),
-          body: SafeArea(
-            child: Column(
-              children: [
-                // ACTS Progress indicator
-                if (!state.isSummary)
-                  ACTSPhaseIndicator(
-                    currentPhase: state.phase,
-                    onPhaseTap: (phase) {
-                      context.read<PrayerSessionCubit>().goToPhase(phase);
-                    },
+        // Wrap everything in PopScope to intercept back button
+        return PopScope(
+          canPop: state.isSummary, // Can pop freely if in summary
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop && !state.isSummary) {
+              _showExitDialog(context);
+            }
+          },
+          child: state.isFocusMode && !state.isSummary
+              ? FocusModeView(
+                  state: state,
+                  onExit: () =>
+                      context.read<PrayerSessionCubit>().exitFocusMode(),
+                )
+              : Scaffold(
+                  appBar: AppBar(
+                    title: Text(_getTitle(state)),
+                    leading: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => _showExitDialog(context),
+                    ),
+                    actions: [
+                      if (!state.isSummary) ...[
+                        IconButton(
+                          icon: const Icon(Icons.fullscreen),
+                          tooltip: 'Modo enfocado',
+                          onPressed: () => context
+                              .read<PrayerSessionCubit>()
+                              .toggleFocusMode(),
+                        ),
+                        const SessionTimerWidget(),
+                      ],
+                    ],
                   ),
+                  body: SafeArea(
+                    child: Column(
+                      children: [
+                        // ACTS Progress indicator
+                        if (!state.isSummary)
+                          ACTSPhaseIndicator(
+                            currentPhase: state.phase,
+                            onPhaseTap: (phase) {
+                              context
+                                  .read<PrayerSessionCubit>()
+                                  .goToPhase(phase);
+                            },
+                          ),
 
-                // Main content
-                Expanded(
-                  child: _buildPhaseContent(context, state),
+                        // Main content
+                        Expanded(
+                          child: _buildPhaseContent(context, state),
+                        ),
+
+                        // Navigation buttons
+                        _buildNavigationBar(context, state),
+                      ],
+                    ),
+                  ),
                 ),
-
-                // Navigation buttons
-                _buildNavigationBar(context, state),
-              ],
-            ),
-          ),
         );
       },
+      ),
     );
   }
 
@@ -285,19 +363,27 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen> {
   }
 
   void _showExitDialog(BuildContext context) {
+    final timerState = context.read<SessionTimerCubit>().state;
+    final duration = Duration(seconds: timerState.elapsedSeconds);
+    final timeString =
+        '${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}';
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('¿Salir de la sesión?'),
-        content: const Text('Tu progreso no se guardará.'),
+        content: Text(
+          'Has estado orando por $timeString.\nTu progreso no se guardará.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancelar'),
+            child: const Text('Continuar orando'),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
+              _endSessionAndCleanup();
               context.go(SelahRoutes.home);
             },
             child: const Text('Salir'),

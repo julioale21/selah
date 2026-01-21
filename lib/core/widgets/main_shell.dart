@@ -4,6 +4,9 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../injection_container.dart';
+import '../services/prayer_session_service.dart';
+
 class MainShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -11,6 +14,53 @@ class MainShell extends StatelessWidget {
     super.key,
     required this.navigationShell,
   });
+
+  void _handleNavigation(BuildContext context, int index) {
+    final sessionService = sl<PrayerSessionService>();
+
+    // If session is active and trying to navigate away from prayer (index 1)
+    if (sessionService.isSessionActive && navigationShell.currentIndex == 1 && index != 1) {
+      _showExitSessionDialog(context, index);
+    } else {
+      navigationShell.goBranch(index);
+    }
+  }
+
+  void _showExitSessionDialog(BuildContext context, int targetIndex) {
+    final sessionService = sl<PrayerSessionService>();
+    final duration = Duration(seconds: sessionService.elapsedSeconds);
+    final timeString =
+        '${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Salir de la sesión?'),
+        content: Text(
+          'Has estado orando por $timeString.\nTu progreso no se guardará.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Continuar orando'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              sessionService.endSession();
+              if (targetIndex == -1) {
+                // Navigate to settings
+                context.push('/settings');
+              } else {
+                navigationShell.goBranch(targetIndex);
+              }
+            },
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +73,15 @@ class MainShell extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: _ModernBottomNav(
         currentIndex: navigationShell.currentIndex,
-        onTap: (index) => navigationShell.goBranch(index),
-        onSettingsTap: () => context.push('/settings'),
+        onTap: (index) => _handleNavigation(context, index),
+        onSettingsTap: () {
+          final sessionService = sl<PrayerSessionService>();
+          if (sessionService.isSessionActive && navigationShell.currentIndex == 1) {
+            _showExitSessionDialog(context, -1); // -1 means settings
+          } else {
+            context.push('/settings');
+          }
+        },
         isDark: isDark,
         primaryColor: primaryColor,
       ),
