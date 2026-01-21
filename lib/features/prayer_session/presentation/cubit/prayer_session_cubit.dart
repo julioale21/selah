@@ -203,6 +203,24 @@ class PrayerSessionCubit extends Cubit<PrayerSessionState> {
     ));
   }
 
+  /// Save an entry with the provided content (used from focus mode)
+  void saveEntryWithContent(String content) {
+    if (content.trim().isEmpty) return;
+
+    final entry = JournalEntry(
+      id: _uuid.v4(),
+      userId: _userId,
+      sessionId: state.session?.id,
+      topicId: state.currentTopic?.id,
+      content: content.trim(),
+      actsStep: state.phase.name,
+      createdAt: DateTime.now(),
+    );
+
+    final updatedEntries = [...state.entries, entry];
+    emit(state.copyWith(entries: updatedEntries));
+  }
+
   void nextTopic() async {
     if (state.currentTopicIndex < state.selectedTopics.length - 1) {
       emit(state.copyWith(currentTopicIndex: state.currentTopicIndex + 1));

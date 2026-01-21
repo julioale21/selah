@@ -8,7 +8,7 @@ import '../cubit/prayer_session_cubit.dart';
 import '../cubit/prayer_session_state.dart';
 import '../cubit/session_timer_cubit.dart';
 
-class FocusModeView extends StatelessWidget {
+class FocusModeView extends StatefulWidget {
   final PrayerSessionState state;
   final VoidCallback onExit;
 
@@ -19,7 +19,125 @@ class FocusModeView extends StatelessWidget {
   });
 
   @override
+  State<FocusModeView> createState() => _FocusModeViewState();
+}
+
+class _FocusModeViewState extends State<FocusModeView> {
+  void _showAddNoteDialog(BuildContext context, Color phaseColor) {
+    final noteController = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: Container(
+            margin: const EdgeInsets.all(SelahSpacing.md),
+            padding: const EdgeInsets.all(SelahSpacing.lg),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A1F2E) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.edit_note,
+                      color: phaseColor,
+                      size: 24,
+                    ),
+                    const SizedBox(width: SelahSpacing.sm),
+                    Text(
+                      'Agregar nota',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
+                ),
+                if (widget.state.currentTopic != null) ...[
+                  const SizedBox(height: SelahSpacing.xs),
+                  Text(
+                    'Para: ${widget.state.currentTopic!.title}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: isDark ? Colors.white54 : Colors.black54,
+                        ),
+                  ),
+                ],
+                const SizedBox(height: SelahSpacing.md),
+                TextField(
+                  controller: noteController,
+                  autofocus: true,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Escribe tu nota, reflexión o petición...',
+                    filled: true,
+                    fillColor: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.grey.withValues(alpha: 0.1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: phaseColor, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: SelahSpacing.md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: SelahSpacing.sm),
+                    FilledButton.icon(
+                      onPressed: () {
+                        if (noteController.text.trim().isNotEmpty) {
+                          context.read<PrayerSessionCubit>().saveEntryWithContent(
+                                noteController.text.trim(),
+                              );
+                          Navigator.pop(sheetContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Nota guardada'),
+                              backgroundColor: phaseColor,
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.save, size: 18),
+                      label: const Text('Guardar'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: phaseColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     final phaseColor = _getPhaseColor(state.phase);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark
@@ -32,6 +150,17 @@ class FocusModeView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: backgroundColor,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 100), // Above bottom menu
+        child: FloatingActionButton.small(
+          onPressed: () => _showAddNoteDialog(context, phaseColor),
+          backgroundColor: phaseColor.withValues(alpha: 0.9),
+          foregroundColor: isDark ? Colors.black87 : Colors.white,
+          tooltip: 'Agregar nota',
+          child: const Icon(Icons.edit_note),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: Stack(
           children: [
@@ -100,7 +229,7 @@ class FocusModeView extends StatelessWidget {
                           Icons.close,
                           color: subtleTextColor,
                         ),
-                        onPressed: onExit,
+                        onPressed: widget.onExit,
                       ),
                     ],
                   ),
