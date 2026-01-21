@@ -25,6 +25,7 @@ import 'features/prayer_topics/domain/repositories/prayer_topic_repository.dart'
 import 'features/prayer_topics/domain/usecases/add_topic.dart';
 import 'features/prayer_topics/domain/usecases/delete_topic.dart';
 import 'features/prayer_topics/domain/usecases/get_topics.dart';
+import 'features/prayer_topics/domain/usecases/reorder_topics.dart';
 import 'features/prayer_topics/domain/usecases/update_topic.dart';
 import 'features/prayer_topics/presentation/cubit/topics_cubit.dart';
 
@@ -125,6 +126,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => AddTopic(sl()));
   sl.registerLazySingleton(() => UpdateTopic(sl()));
   sl.registerLazySingleton(() => DeleteTopic(sl()));
+  sl.registerLazySingleton(() => ReorderTopics(sl()));
 
   // Cubit
   sl.registerFactory(() => TopicsCubit(
@@ -132,6 +134,7 @@ Future<void> init() async {
         addTopic: sl(),
         updateTopic: sl(),
         deleteTopic: sl(),
+        reorderTopics: sl(),
         userService: sl(),
       ));
 

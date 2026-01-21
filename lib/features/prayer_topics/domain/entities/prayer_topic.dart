@@ -10,6 +10,7 @@ class PrayerTopic extends Equatable {
   final int prayerCount;
   final int answeredCount;
   final bool isActive;
+  final int sortOrder;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -23,6 +24,7 @@ class PrayerTopic extends Equatable {
     this.prayerCount = 0,
     this.answeredCount = 0,
     this.isActive = true,
+    this.sortOrder = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -37,6 +39,7 @@ class PrayerTopic extends Equatable {
     int? prayerCount,
     int? answeredCount,
     bool? isActive,
+    int? sortOrder,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -50,6 +53,7 @@ class PrayerTopic extends Equatable {
       prayerCount: prayerCount ?? this.prayerCount,
       answeredCount: answeredCount ?? this.answeredCount,
       isActive: isActive ?? this.isActive,
+      sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -66,6 +70,7 @@ class PrayerTopic extends Equatable {
         prayerCount,
         answeredCount,
         isActive,
+        sortOrder,
         createdAt,
         updatedAt,
       ];

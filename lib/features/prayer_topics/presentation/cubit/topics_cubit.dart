@@ -5,6 +5,7 @@ import '../../domain/entities/prayer_topic.dart';
 import '../../domain/usecases/add_topic.dart';
 import '../../domain/usecases/delete_topic.dart';
 import '../../domain/usecases/get_topics.dart';
+import '../../domain/usecases/reorder_topics.dart';
 import '../../domain/usecases/update_topic.dart';
 import 'topics_state.dart';
 
@@ -13,6 +14,7 @@ class TopicsCubit extends Cubit<TopicsState> {
   final AddTopic addTopic;
   final UpdateTopic updateTopic;
   final DeleteTopic deleteTopic;
+  final ReorderTopics reorderTopics;
   final UserService userService;
 
   TopicsCubit({
@@ -20,6 +22,7 @@ class TopicsCubit extends Cubit<TopicsState> {
     required this.addTopic,
     required this.updateTopic,
     required this.deleteTopic,
+    required this.reorderTopics,
     required this.userService,
   }) : super(const TopicsState());
 
@@ -121,6 +124,29 @@ class TopicsCubit extends Cubit<TopicsState> {
     } else {
       emit(state.copyWith(selectedCategoryId: categoryId));
     }
+  }
+
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    // Adjust newIndex if moving down
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+
+    final topics = List<PrayerTopic>.from(state.topics);
+    final item = topics.removeAt(oldIndex);
+    topics.insert(newIndex, item);
+
+    // Update local state immediately for smooth UI
+    emit(state.copyWith(topics: topics));
+
+    // Persist the new order
+    final result = await reorderTopics(topics);
+    result.fold(
+      (failure) => emit(state.copyWith(errorMessage: failure.message)),
+      (_) {
+        // Order persisted successfully
+      },
+    );
   }
 
   void clearError() {

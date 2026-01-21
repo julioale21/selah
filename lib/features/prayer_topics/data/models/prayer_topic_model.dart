@@ -11,6 +11,7 @@ class PrayerTopicModel extends PrayerTopic {
     super.prayerCount,
     super.answeredCount,
     super.isActive,
+    super.sortOrder,
     required super.createdAt,
     required super.updatedAt,
   });
@@ -26,6 +27,7 @@ class PrayerTopicModel extends PrayerTopic {
       prayerCount: topic.prayerCount,
       answeredCount: topic.answeredCount,
       isActive: topic.isActive,
+      sortOrder: topic.sortOrder,
       createdAt: topic.createdAt,
       updatedAt: topic.updatedAt,
     );
@@ -42,6 +44,7 @@ class PrayerTopicModel extends PrayerTopic {
       prayerCount: map['prayer_count'] as int? ?? 0,
       answeredCount: map['answered_count'] as int? ?? 0,
       isActive: (map['is_active'] as int? ?? 1) == 1,
+      sortOrder: map['sort_order'] as int? ?? 0,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -58,6 +61,7 @@ class PrayerTopicModel extends PrayerTopic {
       'prayer_count': prayerCount,
       'answered_count': answeredCount,
       'is_active': isActive ? 1 : 0,
+      'sort_order': sortOrder,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -73,6 +77,7 @@ class PrayerTopicModel extends PrayerTopic {
     int? prayerCount,
     int? answeredCount,
     bool? isActive,
+    int? sortOrder,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -86,6 +91,7 @@ class PrayerTopicModel extends PrayerTopic {
       prayerCount: prayerCount ?? this.prayerCount,
       answeredCount: answeredCount ?? this.answeredCount,
       isActive: isActive ?? this.isActive,
+      sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

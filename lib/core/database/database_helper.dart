@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'selah.db';
-  static const int _databaseVersion = 5;
+  static const int _databaseVersion = 6;
 
   Database? _database;
 
@@ -53,6 +53,7 @@ class DatabaseHelper {
         prayer_count INTEGER DEFAULT 0,
         answered_count INTEGER DEFAULT 0,
         is_active INTEGER DEFAULT 1,
+        sort_order INTEGER DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (category_id) REFERENCES categories(id)
@@ -243,6 +244,11 @@ class DatabaseHelper {
       // Eliminar tabla vieja y renombrar nueva
       await db.execute('DROP TABLE answered_prayers');
       await db.execute('ALTER TABLE answered_prayers_new RENAME TO answered_prayers');
+    }
+
+    if (oldVersion < 6) {
+      // Agregar columna sort_order a prayer_topics
+      await db.execute('ALTER TABLE prayer_topics ADD COLUMN sort_order INTEGER DEFAULT 0');
     }
   }
 

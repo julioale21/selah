@@ -22,6 +22,8 @@ class TopicsScreen extends StatefulWidget {
 }
 
 class _TopicsScreenState extends State<TopicsScreen> {
+  bool _isReorderMode = false;
+
   @override
   void initState() {
     super.initState();
@@ -44,16 +46,41 @@ class _TopicsScreenState extends State<TopicsScreen> {
     context.read<CategoriesCubit>().loadCategories();
   }
 
+  void _toggleReorderMode() {
+    setState(() {
+      _isReorderMode = !_isReorderMode;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis Temas'),
+        title: Text(_isReorderMode ? 'Ordenar Temas' : 'Mis Temas'),
+        leading: _isReorderMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _toggleReorderMode,
+              )
+            : null,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () => _showFilterSheet(context),
-          ),
+          if (_isReorderMode)
+            IconButton(
+              icon: const Icon(Icons.check),
+              onPressed: _toggleReorderMode,
+              tooltip: 'Listo',
+            )
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.swap_vert),
+              onPressed: _toggleReorderMode,
+              tooltip: 'Ordenar temas',
+            ),
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: () => _showFilterSheet(context),
+            ),
+          ],
         ],
       ),
       body: BlocConsumer<TopicsCubit, TopicsState>(
@@ -81,19 +108,47 @@ class _TopicsScreenState extends State<TopicsScreen> {
           return _buildTopicsList(context, state);
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddTopicDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Nuevo tema'),
-      ),
+      floatingActionButton: _isReorderMode
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => _showAddTopicDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Nuevo tema'),
+            ),
     );
   }
 
   Widget _buildTopicsList(BuildContext context, TopicsState state) {
-    final topics = state.filteredTopics;
+    // When in reorder mode, use all topics (not filtered)
+    final topics = _isReorderMode ? state.topics : state.filteredTopics;
 
     return BlocBuilder<CategoriesCubit, CategoriesState>(
       builder: (context, categoriesState) {
+        if (_isReorderMode) {
+          return ReorderableListView.builder(
+            padding: const EdgeInsets.only(
+              top: SelahSpacing.sm,
+              bottom: 80,
+            ),
+            itemCount: topics.length,
+            onReorder: (oldIndex, newIndex) {
+              context.read<TopicsCubit>().reorder(oldIndex, newIndex);
+            },
+            itemBuilder: (context, index) {
+              final topic = topics[index];
+              final category = topic.categoryId != null
+                  ? categoriesState.getCategoryById(topic.categoryId!)
+                  : null;
+
+              return _ReorderableTopicTile(
+                key: ValueKey(topic.id),
+                topic: topic,
+                category: category,
+              );
+            },
+          );
+        }
+
         return ListView.builder(
           padding: const EdgeInsets.only(
             top: SelahSpacing.sm,
@@ -221,5 +276,64 @@ class _TopicsScreenState extends State<TopicsScreen> {
     if (confirmed == true && context.mounted) {
       context.read<TopicsCubit>().removeTopic(topic.id);
     }
+  }
+}
+
+class _ReorderableTopicTile extends StatelessWidget {
+  final PrayerTopic topic;
+  final cat.Category? category;
+
+  const _ReorderableTopicTile({
+    super.key,
+    required this.topic,
+    this.category,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(
+        horizontal: SelahSpacing.md,
+        vertical: SelahSpacing.xs,
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: category?.color.withValues(alpha: 0.2) ??
+                theme.colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.bookmark,
+            color: category?.color ?? theme.colorScheme.primary,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          topic.title,
+          style: theme.textTheme.titleMedium,
+        ),
+        subtitle: category != null
+            ? Text(
+                category!.name,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: category!.color,
+                ),
+              )
+            : null,
+        trailing: ReorderableDragStartListener(
+          index: 0, // The index is handled by the ReorderableListView
+          child: Icon(
+            Icons.drag_handle,
+            color: isDark ? Colors.white54 : Colors.black38,
+          ),
+        ),
+      ),
+    );
   }
 }

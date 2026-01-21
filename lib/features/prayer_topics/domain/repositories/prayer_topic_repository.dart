@@ -30,4 +30,7 @@ abstract class PrayerTopicRepository {
 
   /// Increment answered prayer count
   Future<Either<Failure, void>> incrementAnsweredCount(String id);
+
+  /// Reorder topics
+  Future<Either<Failure, void>> reorderTopics(List<PrayerTopic> topics);
 }

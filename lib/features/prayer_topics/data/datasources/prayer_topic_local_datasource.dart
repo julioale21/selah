@@ -11,6 +11,7 @@ abstract class PrayerTopicLocalDataSource {
   Future<void> deleteTopic(String id);
   Future<void> incrementPrayerCount(String id);
   Future<void> incrementAnsweredCount(String id);
+  Future<void> reorderTopics(List<PrayerTopicModel> topics);
 }
 
 class PrayerTopicLocalDataSourceImpl implements PrayerTopicLocalDataSource {
@@ -27,7 +28,7 @@ class PrayerTopicLocalDataSourceImpl implements PrayerTopicLocalDataSource {
         _tableName,
         where: 'user_id = ? AND is_active = ?',
         whereArgs: [userId, 1],
-        orderBy: 'created_at DESC',
+        orderBy: 'sort_order ASC, created_at DESC',
       );
       return results.map((map) => PrayerTopicModel.fromMap(map)).toList();
     } catch (e) {
@@ -45,7 +46,7 @@ class PrayerTopicLocalDataSourceImpl implements PrayerTopicLocalDataSource {
         _tableName,
         where: 'user_id = ? AND category_id = ? AND is_active = ?',
         whereArgs: [userId, categoryId, 1],
-        orderBy: 'created_at DESC',
+        orderBy: 'sort_order ASC, created_at DESC',
       );
       return results.map((map) => PrayerTopicModel.fromMap(map)).toList();
     } catch (e) {
@@ -153,6 +154,26 @@ class PrayerTopicLocalDataSourceImpl implements PrayerTopicLocalDataSource {
       );
     } catch (e) {
       throw DatabaseException('Error al incrementar respuestas: $e');
+    }
+  }
+
+  @override
+  Future<void> reorderTopics(List<PrayerTopicModel> topics) async {
+    try {
+      final now = DateTime.now().toIso8601String();
+      for (int i = 0; i < topics.length; i++) {
+        await databaseHelper.update(
+          _tableName,
+          {
+            'sort_order': i,
+            'updated_at': now,
+          },
+          where: 'id = ?',
+          whereArgs: [topics[i].id],
+        );
+      }
+    } catch (e) {
+      throw DatabaseException('Error al reordenar temas: $e');
     }
   }
 }

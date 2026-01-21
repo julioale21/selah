@@ -98,4 +98,15 @@ class PrayerTopicRepositoryImpl implements PrayerTopicRepository {
       return Left(DatabaseFailure(e.message));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> reorderTopics(List<PrayerTopic> topics) async {
+    try {
+      final models = topics.map((t) => PrayerTopicModel.fromEntity(t)).toList();
+      await localDataSource.reorderTopics(models);
+      return const Right(null);
+    } on DatabaseException catch (e) {
+      return Left(DatabaseFailure(e.message));
+    }
+  }
 }
