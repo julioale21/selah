@@ -1,5 +1,6 @@
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../domain/entities/goal_daily_achievement.dart';
 import '../../domain/entities/prayer_goal.dart';
 import '../models/prayer_goal_model.dart';
 
@@ -25,6 +26,12 @@ abstract class GoalsLocalDataSource {
   );
   Future<bool> isCelebrationShown(String userId, String goalId, GoalType type, String periodKey);
   Future<void> markCelebrationShown(String id, String userId, String goalId, GoalType type, String periodKey);
+  Future<List<GoalDailyAchievement>> getDailyGoalAchievements(
+    String userId,
+    int targetMinutes,
+    DateTime goalCreatedAt,
+    int daysBack,
+  );
 }
 
 class GoalsLocalDataSourceImpl implements GoalsLocalDataSource {
@@ -349,5 +356,55 @@ class GoalsLocalDataSourceImpl implements GoalsLocalDataSource {
     final daysSinceJan4 = date.difference(jan4).inDays;
     final weekday = date.weekday; // 1 = Monday, 7 = Sunday
     return ((daysSinceJan4 + jan4.weekday - weekday) / 7).floor() + 1;
+  }
+
+  @override
+  Future<List<GoalDailyAchievement>> getDailyGoalAchievements(
+    String userId,
+    int targetMinutes,
+    DateTime goalCreatedAt,
+    int daysBack,
+  ) async {
+    try {
+      final now = DateTime.now();
+      final achievements = <GoalDailyAchievement>[];
+
+      // Normalize goalCreatedAt to start of day
+      final goalStartDate = DateTime(goalCreatedAt.year, goalCreatedAt.month, goalCreatedAt.day);
+
+      for (int i = daysBack - 1; i >= 0; i--) {
+        final date = DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
+        final dateStr = _formatDate(date);
+
+        // Check if goal was active on this day
+        final hadGoal = !date.isBefore(goalStartDate);
+
+        final results = await databaseHelper.rawQuery(
+          '''
+          SELECT COALESCE(SUM(duration_seconds), 0) as total_seconds
+          FROM $_sessionsTable
+          WHERE user_id = ? AND date(started_at) = ?
+          ''',
+          [userId, dateStr],
+        );
+
+        final totalSeconds = results.isNotEmpty
+            ? (results.first['total_seconds'] as int? ?? 0)
+            : 0;
+        final minutesPrayed = (totalSeconds / 60).floor();
+
+        achievements.add(GoalDailyAchievement(
+          date: date,
+          minutesPrayed: minutesPrayed,
+          targetMinutes: hadGoal ? targetMinutes : 0,
+          achieved: hadGoal && minutesPrayed >= targetMinutes,
+          hadGoal: hadGoal,
+        ));
+      }
+
+      return achievements;
+    } catch (e) {
+      throw CacheException(message: 'Error al obtener logros diarios: $e');
+    }
   }
 }

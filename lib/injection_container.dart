@@ -248,6 +248,7 @@ Future<void> init() async {
   // Cubit
   sl.registerFactory(() => StatsCubit(
         repository: sl(),
+        goalsRepository: sl(),
         userService: sl(),
       ));
 

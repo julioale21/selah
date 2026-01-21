@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
+import '../../domain/entities/goal_daily_achievement.dart';
 import '../../domain/entities/goal_progress.dart';
 import '../../domain/entities/prayer_goal.dart';
 import '../../domain/repositories/goals_repository.dart';
@@ -344,6 +345,35 @@ class GoalsRepositoryImpl implements GoalsRepository {
         periodKey,
       );
       return const Right(null);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(message: e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<GoalDailyAchievement>>> getDailyGoalAchievements(
+    String userId,
+    int daysBack,
+  ) async {
+    try {
+      // Get the active daily goal to know the target and creation date
+      final activeGoal = await localDataSource.getActiveGoalByType(
+        userId,
+        GoalType.dailyDuration,
+      );
+
+      if (activeGoal == null) {
+        return const Right([]);
+      }
+
+      final achievements = await localDataSource.getDailyGoalAchievements(
+        userId,
+        activeGoal.targetMinutes,
+        activeGoal.createdAt,
+        daysBack,
+      );
+
+      return Right(achievements);
     } on CacheException catch (e) {
       return Left(CacheFailure(message: e.message));
     }

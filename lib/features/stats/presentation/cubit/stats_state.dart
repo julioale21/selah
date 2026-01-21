@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../goals/domain/entities/goal_daily_achievement.dart';
 import '../../domain/entities/prayer_stats.dart';
 import '../../domain/entities/streak_info.dart';
 import '../../domain/repositories/stats_repository.dart';
@@ -12,6 +13,7 @@ class StatsState extends Equatable {
   final PrayerStats stats;
   final StreakInfo streakInfo;
   final Map<String, int> weeklyActivity;
+  final List<GoalDailyAchievement> goalAchievements;
   final String? errorMessage;
 
   const StatsState({
@@ -20,11 +22,13 @@ class StatsState extends Equatable {
     this.stats = const PrayerStats(),
     this.streakInfo = const StreakInfo(),
     this.weeklyActivity = const {},
+    this.goalAchievements = const [],
     this.errorMessage,
   });
 
   bool get isLoading => status == StatsStatus.loading;
   bool get hasData => stats.totalSessions > 0;
+  bool get hasGoalAchievements => goalAchievements.isNotEmpty;
 
   String get periodLabel {
     switch (selectedPeriod) {
@@ -45,6 +49,7 @@ class StatsState extends Equatable {
     PrayerStats? stats,
     StreakInfo? streakInfo,
     Map<String, int>? weeklyActivity,
+    List<GoalDailyAchievement>? goalAchievements,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -54,6 +59,7 @@ class StatsState extends Equatable {
       stats: stats ?? this.stats,
       streakInfo: streakInfo ?? this.streakInfo,
       weeklyActivity: weeklyActivity ?? this.weeklyActivity,
+      goalAchievements: goalAchievements ?? this.goalAchievements,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
@@ -65,6 +71,7 @@ class StatsState extends Equatable {
         stats,
         streakInfo,
         weeklyActivity,
+        goalAchievements,
         errorMessage,
       ];
 }

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failures.dart';
+import '../entities/goal_daily_achievement.dart';
 import '../entities/goal_progress.dart';
 import '../entities/prayer_goal.dart';
 
@@ -76,5 +77,11 @@ abstract class GoalsRepository {
     String userId,
     String goalId,
     GoalType type,
+  );
+
+  /// Get daily goal achievements for the last N days
+  Future<Either<Failure, List<GoalDailyAchievement>>> getDailyGoalAchievements(
+    String userId,
+    int daysBack,
   );
 }

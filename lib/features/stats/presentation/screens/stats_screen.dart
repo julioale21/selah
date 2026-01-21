@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
+import '../../../goals/domain/entities/goal_daily_achievement.dart';
 import '../../domain/entities/prayer_stats.dart';
 import '../../domain/entities/streak_info.dart';
 import '../../domain/repositories/stats_repository.dart';
@@ -87,6 +88,15 @@ class _StatsScreenState extends State<StatsScreen> {
                                 isDark: isDark,
                               ),
                               const SizedBox(height: SelahSpacing.lg),
+
+                              // Goals achievement calendar
+                              if (state.hasGoalAchievements) ...[
+                                _GoalsAchievementCard(
+                                  achievements: state.goalAchievements,
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: SelahSpacing.lg),
+                              ],
 
                               // ACTS distribution
                               if (state.stats.minutesByPhase.isNotEmpty) ...[
@@ -987,6 +997,315 @@ class _TopTopicsCard extends StatelessWidget {
           }),
         ],
       ),
+    );
+  }
+}
+
+class _GoalsAchievementCard extends StatelessWidget {
+  final List<GoalDailyAchievement> achievements;
+  final bool isDark;
+
+  const _GoalsAchievementCard({
+    required this.achievements,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Only count days that had a goal for statistics
+    final daysWithGoal = achievements.where((a) => a.hadGoal).toList();
+    final achievedCount = daysWithGoal.where((a) => a.achieved).length;
+    final totalDaysWithGoal = daysWithGoal.length;
+    final percentage = totalDaysWithGoal > 0 ? (achievedCount / totalDaysWithGoal * 100).round() : 0;
+
+    // Get target from first achievement that had a goal
+    final targetMinutes = daysWithGoal.isNotEmpty ? daysWithGoal.first.targetMinutes : 0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161B22) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Icon(
+                Icons.flag_rounded,
+                size: 18,
+                color: isDark ? Colors.white54 : Colors.black45,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Cumplimiento de meta diaria',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: percentage >= 70
+                      ? SelahColors.thanksgiving.withValues(alpha: 0.15)
+                      : percentage >= 40
+                          ? SelahColors.adoration.withValues(alpha: 0.15)
+                          : Colors.grey.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$percentage%',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: percentage >= 70
+                        ? SelahColors.thanksgiving
+                        : percentage >= 40
+                            ? SelahColors.adoration
+                            : Colors.grey,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            totalDaysWithGoal > 0
+                ? 'Meta: ${_formatMinutes(targetMinutes)} · $achievedCount de $totalDaysWithGoal días'
+                : 'Configura una meta diaria para ver tu progreso',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.white54 : Colors.black45,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Calendar grid - 7 columns (days of week)
+          _buildCalendarGrid(),
+
+          const SizedBox(height: 12),
+
+          // Legend
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _LegendItem(
+                color: SelahColors.thanksgiving,
+                label: 'Cumplida',
+                isDark: isDark,
+              ),
+              const SizedBox(width: 12),
+              _LegendItem(
+                color: const Color(0xFFE57373).withValues(alpha: 0.6),
+                label: 'No cumplida',
+                isDark: isDark,
+              ),
+              const SizedBox(width: 12),
+              _LegendItem(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.05),
+                label: 'Sin meta',
+                isDark: isDark,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarGrid() {
+    // Build rows of 7 days each
+    final rows = <Widget>[];
+
+    for (int i = 0; i < achievements.length; i += 7) {
+      final rowAchievements = achievements.skip(i).take(7).toList();
+      rows.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: i + 7 < achievements.length ? 4 : 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: rowAchievements.map((achievement) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _DayCell(
+                  achievement: achievement,
+                  isDark: isDark,
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      );
+    }
+
+    return Column(children: rows);
+  }
+
+  String _formatMinutes(int minutes) {
+    if (minutes >= 60) {
+      final hours = minutes ~/ 60;
+      final mins = minutes % 60;
+      if (mins == 0) {
+        return '$hours ${hours == 1 ? 'hora' : 'horas'}';
+      }
+      return '${hours}h ${mins}min';
+    }
+    return '$minutes min';
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  final GoalDailyAchievement achievement;
+  final bool isDark;
+
+  const _DayCell({
+    required this.achievement,
+    required this.isDark,
+  });
+
+  // Subtle red for not achieved
+  static const _notAchievedColor = Color(0xFFE57373);
+
+  Color _getCellColor() {
+    final isToday = _isToday(achievement.date);
+
+    if (!achievement.hadGoal) {
+      // No goal on this day - neutral grey
+      return isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : Colors.black.withValues(alpha: 0.04);
+    }
+
+    if (achievement.achieved) {
+      // Goal achieved - green
+      return SelahColors.thanksgiving.withValues(alpha: isToday ? 1.0 : 0.7);
+    }
+
+    // Had goal but not achieved - subtle red
+    return _notAchievedColor.withValues(alpha: isToday ? 0.7 : 0.4);
+  }
+
+  Color _getTextColor() {
+    if (!achievement.hadGoal) {
+      return isDark ? Colors.white24 : Colors.black26;
+    }
+    if (achievement.achieved) {
+      return Colors.white;
+    }
+    return Colors.white;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = _isToday(achievement.date);
+
+    String tooltipMessage;
+    if (!achievement.hadGoal) {
+      tooltipMessage = '${_formatDate(achievement.date)}\nSin meta configurada';
+    } else {
+      tooltipMessage = '${_formatDate(achievement.date)}\n${achievement.minutesPrayed}/${achievement.targetMinutes} min';
+    }
+
+    return Tooltip(
+      message: tooltipMessage,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: _getCellColor(),
+          borderRadius: BorderRadius.circular(8),
+          border: isToday
+              ? Border.all(
+                  color: achievement.achieved
+                      ? SelahColors.thanksgiving
+                      : achievement.hadGoal
+                          ? _notAchievedColor
+                          : SelahColors.primary,
+                  width: 2,
+                )
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            '${achievement.date.day}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+              color: _getTextColor(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    return '${date.day} ${months[date.month - 1]}';
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  final bool isDark;
+
+  const _LegendItem({
+    required this.color,
+    required this.label,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? Colors.white54 : Colors.black45,
+          ),
+        ),
+      ],
     );
   }
 }
