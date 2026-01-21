@@ -9,8 +9,10 @@ import '../../../../core/router/selah_routes.dart';
 import '../../../../core/services/home_refresh_service.dart';
 import '../../../../core/services/user_service.dart';
 import '../../../../injection_container.dart';
+import '../../../bible/domain/repositories/verse_repository.dart';
 import '../../../goals/domain/entities/goal_progress.dart';
 import '../../../goals/domain/repositories/goals_repository.dart';
+import '../../../goals/presentation/widgets/goal_celebration_dialog.dart';
 import '../../../goals/presentation/widgets/goal_progress_card.dart';
 import '../../../stats/domain/entities/streak_info.dart';
 import '../../../stats/domain/repositories/stats_repository.dart';
@@ -28,6 +30,8 @@ class _HomeContentState extends State<HomeContent> with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _goalDataLoaded = false;
   StreamSubscription<void>? _refreshSubscription;
+  bool _celebrationShownToday = false;
+  int? _lastKnownMinutes;
 
   @override
   void initState() {
@@ -93,9 +97,27 @@ class _HomeContentState extends State<HomeContent> with WidgetsBindingObserver {
         (failure) {},
         (progress) {
           if (mounted) {
+            final previousProgress = _goalProgress;
+            final previousMinutes = _lastKnownMinutes;
+
             setState(() {
               _goalProgress = progress;
+              _lastKnownMinutes = progress?.currentMinutes;
             });
+
+            // Check if goal was just completed (crossed the threshold)
+            if (progress != null &&
+                progress.isCompleted &&
+                !_celebrationShownToday) {
+              // Goal is completed and we haven't shown celebration yet
+              final wasNotCompletedBefore = previousProgress == null ||
+                  !previousProgress.isCompleted ||
+                  (previousMinutes != null && previousMinutes < progress.goal.targetMinutes);
+
+              if (wasNotCompletedBefore) {
+                _showCelebration(progress);
+              }
+            }
           }
         },
       );
@@ -111,6 +133,37 @@ class _HomeContentState extends State<HomeContent> with WidgetsBindingObserver {
           _goalDataLoaded = true;
         });
       }
+    }
+  }
+
+  Future<void> _showCelebration(GoalProgress progress) async {
+    _celebrationShownToday = true;
+
+    // Get a verse for the celebration
+    String? verseText;
+    String? verseReference;
+
+    try {
+      final verseRepo = sl<VerseRepository>();
+      final verse = await verseRepo.getRandomVerseByCategory('gratitud');
+      if (verse != null) {
+        verseText = verse.textEs;
+        verseReference = verse.reference;
+      }
+    } catch (e) {
+      // Use a default verse if we can't get one from the repository
+      verseText = 'Perseverad en la oración, velando en ella con acción de gracias.';
+      verseReference = 'Colosenses 4:2';
+    }
+
+    if (mounted) {
+      await GoalCelebrationDialog.show(
+        context,
+        minutesCompleted: progress.currentMinutes,
+        targetMinutes: progress.goal.targetMinutes,
+        verseText: verseText,
+        verseReference: verseReference,
+      );
     }
   }
 
