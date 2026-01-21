@@ -30,6 +30,11 @@ class PlannerRepositoryImpl implements PlannerRepository {
   }
 
   @override
+  Future<DailyPlan> updatePlanTopics(String planId, List<String> topicIds) {
+    return localDataSource.updatePlanTopics(planId, topicIds);
+  }
+
+  @override
   Future<DailyPlan> markPlanCompleted(String planId, String? sessionId) {
     return localDataSource.markPlanCompleted(planId, sessionId);
   }

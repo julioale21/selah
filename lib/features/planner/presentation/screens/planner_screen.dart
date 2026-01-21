@@ -99,6 +99,15 @@ class _PlannerScreenState extends State<PlannerScreen> {
                             topicIds,
                           );
                     },
+                    onEditPlan: state.getPlanForDate(state.selectedDate) != null
+                        ? (topicIds) {
+                            final plan = state.getPlanForDate(state.selectedDate)!;
+                            context.read<PlannerCubit>().updatePlanTopics(
+                                  plan.id,
+                                  topicIds,
+                                );
+                          }
+                        : null,
                     onStartPrayer: () {
                       // Navigate to prayer session with the plan's topics
                       final plan = state.getPlanForDate(state.selectedDate);

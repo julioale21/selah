@@ -180,6 +180,24 @@ class PlannerCubit extends Cubit<PlannerState> {
     }
   }
 
+  Future<void> updatePlanTopics(String planId, List<String> topicIds) async {
+    if (topicIds.isEmpty) {
+      emit(state.copyWith(errorMessage: 'Selecciona al menos un tema'));
+      return;
+    }
+
+    try {
+      final updatedPlan = await plannerRepository.updatePlanTopics(planId, topicIds);
+      await _loadWeekPlans();
+
+      if (state.todayPlan?.id == planId) {
+        emit(state.copyWith(todayPlan: updatedPlan));
+      }
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Error al actualizar plan: $e'));
+    }
+  }
+
   List<PrayerTopic> _generateSuggestions(List<PrayerTopic> allTopics) {
     if (allTopics.isEmpty) return [];
 

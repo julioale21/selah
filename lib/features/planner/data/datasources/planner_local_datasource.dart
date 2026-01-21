@@ -5,6 +5,7 @@ abstract class PlannerLocalDataSource {
   Future<DailyPlanModel?> getPlanForDate(String userId, DateTime date);
   Future<List<DailyPlanModel>> getPlansForDateRange(String userId, DateTime start, DateTime end);
   Future<DailyPlanModel> savePlan(DailyPlanModel plan);
+  Future<DailyPlanModel> updatePlanTopics(String planId, List<String> topicIds);
   Future<DailyPlanModel> markPlanCompleted(String planId, String? sessionId);
   Future<void> deletePlan(String planId);
   Future<int> getStreakDays(String userId);
@@ -56,6 +57,24 @@ class PlannerLocalDataSourceImpl implements PlannerLocalDataSource {
   Future<DailyPlanModel> savePlan(DailyPlanModel plan) async {
     await databaseHelper.insert('daily_plans', plan.toMap());
     return plan;
+  }
+
+  @override
+  Future<DailyPlanModel> updatePlanTopics(String planId, List<String> topicIds) async {
+    await databaseHelper.update(
+      'daily_plans',
+      {'topic_ids': topicIds.join(',')},
+      where: 'id = ?',
+      whereArgs: [planId],
+    );
+
+    final results = await databaseHelper.query(
+      'daily_plans',
+      where: 'id = ?',
+      whereArgs: [planId],
+    );
+
+    return DailyPlanModel.fromMap(results.first);
   }
 
   @override

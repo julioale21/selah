@@ -9,6 +9,7 @@ class DailyPlanCard extends StatefulWidget {
   final List<PrayerTopic> suggestedTopics;
   final List<PrayerTopic> allTopics;
   final Function(List<String>) onCreatePlan;
+  final Function(List<String>)? onEditPlan;
   final VoidCallback onStartPrayer;
   final VoidCallback? onDeletePlan;
 
@@ -18,6 +19,7 @@ class DailyPlanCard extends StatefulWidget {
     required this.suggestedTopics,
     required this.allTopics,
     required this.onCreatePlan,
+    this.onEditPlan,
     required this.onStartPrayer,
     this.onDeletePlan,
   });
@@ -28,13 +30,31 @@ class DailyPlanCard extends StatefulWidget {
 
 class _DailyPlanCardState extends State<DailyPlanCard> {
   final Set<String> _selectedTopicIds = {};
+  bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
-    // Pre-select suggested topics
-    for (final topic in widget.suggestedTopics) {
-      _selectedTopicIds.add(topic.id);
+    _initializeSelectedTopics();
+  }
+
+  @override
+  void didUpdateWidget(DailyPlanCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.plan?.id != widget.plan?.id) {
+      _isEditing = false;
+      _initializeSelectedTopics();
+    }
+  }
+
+  void _initializeSelectedTopics() {
+    _selectedTopicIds.clear();
+    if (widget.plan != null) {
+      _selectedTopicIds.addAll(widget.plan!.topicIds);
+    } else {
+      for (final topic in widget.suggestedTopics) {
+        _selectedTopicIds.add(topic.id);
+      }
     }
   }
 
@@ -67,13 +87,32 @@ class _DailyPlanCardState extends State<DailyPlanCard> {
                 const SizedBox(width: SelahSpacing.sm),
                 Expanded(
                   child: Text(
-                    plan.isCompleted ? 'Plan completado' : 'Plan del día',
+                    _isEditing
+                        ? 'Editar plan'
+                        : (plan.isCompleted ? 'Plan completado' : 'Plan del día'),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                   ),
                 ),
-                if (widget.onDeletePlan != null)
+                if (widget.onEditPlan != null && !_isEditing)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => setState(() => _isEditing = true),
+                    tooltip: 'Editar plan',
+                  ),
+                if (_isEditing)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _isEditing = false;
+                        _initializeSelectedTopics();
+                      });
+                    },
+                    tooltip: 'Cancelar',
+                  ),
+                if (widget.onDeletePlan != null && !_isEditing)
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
                     onPressed: widget.onDeletePlan,
@@ -84,7 +123,7 @@ class _DailyPlanCardState extends State<DailyPlanCard> {
             ),
             const SizedBox(height: SelahSpacing.md),
 
-            // Topics
+            // Topics - show as chips when viewing, filter chips when editing
             Text(
               'Temas:',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -92,27 +131,75 @@ class _DailyPlanCardState extends State<DailyPlanCard> {
                   ),
             ),
             const SizedBox(height: SelahSpacing.xs),
-            Wrap(
-              spacing: SelahSpacing.xs,
-              runSpacing: SelahSpacing.xs,
-              children: planTopics.map((topic) => Chip(
-                avatar: const Icon(
-                  Icons.bookmark,
-                  size: 18,
-                ),
-                label: Text(topic.title),
-              )).toList(),
-            ),
 
-            const SizedBox(height: SelahSpacing.lg),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: widget.onStartPrayer,
-                icon: Icon(plan.isCompleted ? Icons.replay : Icons.play_arrow),
-                label: Text(plan.isCompleted ? 'Orar de nuevo' : 'Iniciar Oración'),
+            if (_isEditing) ...[
+              // Editing mode - show all topics as selectable
+              Wrap(
+                spacing: SelahSpacing.xs,
+                runSpacing: SelahSpacing.xs,
+                children: widget.allTopics.map((topic) => FilterChip(
+                  selected: _selectedTopicIds.contains(topic.id),
+                  avatar: const Icon(Icons.bookmark, size: 18),
+                  label: Text(topic.title),
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedTopicIds.add(topic.id);
+                      } else {
+                        _selectedTopicIds.remove(topic.id);
+                      }
+                    });
+                  },
+                )).toList(),
               ),
-            ),
+              const SizedBox(height: SelahSpacing.lg),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setState(() {
+                          _isEditing = false;
+                          _initializeSelectedTopics();
+                        });
+                      },
+                      child: const Text('Cancelar'),
+                    ),
+                  ),
+                  const SizedBox(width: SelahSpacing.sm),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _selectedTopicIds.isEmpty
+                          ? null
+                          : () {
+                              widget.onEditPlan?.call(_selectedTopicIds.toList());
+                              setState(() => _isEditing = false);
+                            },
+                      child: Text('Guardar (${_selectedTopicIds.length})'),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // View mode - show plan topics as regular chips
+              Wrap(
+                spacing: SelahSpacing.xs,
+                runSpacing: SelahSpacing.xs,
+                children: planTopics.map((topic) => Chip(
+                  avatar: const Icon(Icons.bookmark, size: 18),
+                  label: Text(topic.title),
+                )).toList(),
+              ),
+              const SizedBox(height: SelahSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: widget.onStartPrayer,
+                  icon: Icon(plan.isCompleted ? Icons.replay : Icons.play_arrow),
+                  label: Text(plan.isCompleted ? 'Orar de nuevo' : 'Iniciar Oración'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
