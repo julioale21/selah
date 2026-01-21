@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -108,7 +107,7 @@ class _ModernBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      height: 80,
+      height: 72,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
@@ -119,7 +118,7 @@ class _ModernBottomNav extends StatelessWidget {
             left: 0,
             right: 0,
             child: Container(
-              height: 64,
+              height: 56,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(32),
                 boxShadow: [
@@ -180,7 +179,7 @@ class _ModernBottomNav extends StatelessWidget {
                           primaryColor: primaryColor,
                         ),
                         // Space for center button
-                        const SizedBox(width: 72),
+                        const SizedBox(width: 68),
                         _NavItem(
                           icon: Icons.insights_rounded,
                           label: 'Stats',
@@ -207,7 +206,7 @@ class _ModernBottomNav extends StatelessWidget {
 
           // Center floating prayer button
           Positioned(
-            bottom: 16,
+            bottom: 10,
             child: _CenterPrayerButton(
               isSelected: currentIndex == 1,
               onTap: () => onTap(1),
@@ -284,40 +283,25 @@ class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin 
           return Transform.scale(
             scale: _scaleAnimation.value,
             child: SizedBox(
-              width: 56,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: widget.isSelected
-                          ? widget.primaryColor.withValues(alpha: 0.15)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      widget.icon,
-                      size: 24,
-                      color: color,
-                    ),
+              width: 48,
+              height: 48,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: widget.isSelected
+                        ? widget.primaryColor.withValues(alpha: 0.15)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  const SizedBox(height: 4),
-                  AutoSizeText(
-                    widget.label,
-                    maxLines: 1,
-                    minFontSize: 8,
-                    maxFontSize: 11,
-                    style: TextStyle(
-                      fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: color,
-                      letterSpacing: -0.2,
-                    ),
+                  child: Icon(
+                    widget.icon,
+                    size: 24,
+                    color: color,
                   ),
-                ],
+                ),
               ),
             ),
           );
