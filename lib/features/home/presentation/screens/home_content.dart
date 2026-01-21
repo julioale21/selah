@@ -11,10 +11,9 @@ import '../../../../core/services/user_service.dart';
 import '../../../../injection_container.dart';
 import '../../../bible/domain/repositories/verse_repository.dart';
 import '../../../goals/domain/entities/goal_progress.dart';
-import '../../../goals/domain/entities/prayer_goal.dart';
 import '../../../goals/domain/repositories/goals_repository.dart';
 import '../../../goals/presentation/widgets/goal_celebration_dialog.dart';
-import '../../../goals/presentation/widgets/goal_progress_card.dart';
+import '../../../goals/presentation/widgets/swipeable_goals_card.dart';
 import '../../../stats/domain/entities/streak_info.dart';
 import '../../../stats/domain/repositories/stats_repository.dart';
 
@@ -27,12 +26,11 @@ class HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<HomeContent> with WidgetsBindingObserver {
   StreakInfo _streakInfo = const StreakInfo();
-  GoalProgress? _goalProgress;
+  List<GoalProgress> _allProgress = [];
   bool _isLoading = true;
   bool _goalDataLoaded = false;
   StreamSubscription<void>? _refreshSubscription;
-  bool _celebrationShownToday = false;
-  int? _lastKnownMinutes;
+  final Map<String, int> _lastKnownMinutes = {}; // goalId -> minutes
 
   @override
   void initState() {
@@ -92,42 +90,57 @@ class _HomeContentState extends State<HomeContent> with WidgetsBindingObserver {
       final goalsRepo = sl<GoalsRepository>();
       final userId = sl<UserService>().currentUserId;
 
-      // First get the active goal to determine its type
-      final activeGoalResult = await goalsRepo.getActiveGoal(userId);
-      PrayerGoal? activeGoal;
-      activeGoalResult.fold(
-        (failure) {},
-        (goal) => activeGoal = goal,
-      );
-
-      // Load progress based on goal type
-      final result = activeGoal?.type == GoalType.weeklyDuration
-          ? await goalsRepo.getWeeklyProgress(userId)
-          : await goalsRepo.getDailyProgress(userId);
+      // Load all progress for all active goals
+      final result = await goalsRepo.getAllProgress(userId);
 
       result.fold(
         (failure) {},
-        (progress) {
+        (progressList) async {
           if (mounted) {
-            final previousProgress = _goalProgress;
-            final previousMinutes = _lastKnownMinutes;
+            final previousProgress = Map<String, GoalProgress>.fromEntries(
+              _allProgress.map((p) => MapEntry(p.goal.id, p)),
+            );
 
             setState(() {
-              _goalProgress = progress;
-              _lastKnownMinutes = progress?.currentMinutes;
+              _allProgress = progressList;
             });
 
-            // Check if goal was just completed (crossed the threshold)
-            if (progress != null &&
-                progress.isCompleted &&
-                !_celebrationShownToday) {
-              // Goal is completed and we haven't shown celebration yet
-              final wasNotCompletedBefore = previousProgress == null ||
-                  !previousProgress.isCompleted ||
-                  (previousMinutes != null && previousMinutes < progress.goal.targetMinutes);
+            // Check each goal for celebration
+            for (final progress in progressList) {
+              final goalId = progress.goal.id;
+              final previousMinutes = _lastKnownMinutes[goalId];
 
-              if (wasNotCompletedBefore) {
-                _showCelebration(progress);
+              // Update last known minutes
+              _lastKnownMinutes[goalId] = progress.currentMinutes;
+
+              // Check if goal was just completed
+              if (progress.isCompleted) {
+                // Check if celebration was already shown for this period
+                final celebrationResult = await goalsRepo.isCelebrationShown(
+                  userId,
+                  goalId,
+                  progress.goal.type,
+                );
+
+                bool alreadyShown = false;
+                celebrationResult.fold(
+                  (failure) {},
+                  (shown) => alreadyShown = shown,
+                );
+
+                if (!alreadyShown) {
+                  // Check if it was just completed (not completed before in this session)
+                  final prevProgress = previousProgress[goalId];
+                  final wasNotCompletedBefore = prevProgress == null ||
+                      !prevProgress.isCompleted ||
+                      (previousMinutes != null && previousMinutes < progress.goal.targetMinutes);
+
+                  if (wasNotCompletedBefore) {
+                    await _showCelebration(progress);
+                    // Mark as shown
+                    await goalsRepo.markCelebrationShown(userId, goalId, progress.goal.type);
+                  }
+                }
               }
             }
           }
@@ -149,8 +162,6 @@ class _HomeContentState extends State<HomeContent> with WidgetsBindingObserver {
   }
 
   Future<void> _showCelebration(GoalProgress progress) async {
-    _celebrationShownToday = true;
-
     // Get a verse for the celebration
     String? verseText;
     String? verseReference;
@@ -260,14 +271,14 @@ class _HomeContentState extends State<HomeContent> with WidgetsBindingObserver {
                 ),
               ),
 
-              // Goal progress card
+              // Goal progress cards
               if (_goalDataLoaded)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                    child: _goalProgress != null
-                        ? GoalProgressCard(
-                            progress: _goalProgress!,
+                    child: _allProgress.isNotEmpty
+                        ? SwipeableGoalsCard(
+                            progressList: _allProgress,
                             onTap: () async {
                               await context.push(SelahRoutes.goals);
                               _loadData(); // Refresh when returning

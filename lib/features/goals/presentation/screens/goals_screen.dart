@@ -18,7 +18,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
   int? _selectedMinutes;
   int _customMinutes = 30;
   bool _showCustomSlider = false;
-  bool _initialized = false;
 
   @override
   void initState() {
@@ -26,21 +25,25 @@ class _GoalsScreenState extends State<GoalsScreen> {
     context.read<GoalsCubit>().loadGoals();
   }
 
-  void _initializeFromState(GoalsState state) {
-    if (_initialized || state.activeGoal == null) return;
-    _initialized = true;
+  void _onTypeSelected(GoalType type, GoalsState state) {
+    final existingGoal = state.getActiveGoalByType(type);
 
-    _selectedType = state.activeGoal!.type;
-    _selectedMinutes = state.activeGoal!.targetMinutes;
+    setState(() {
+      _selectedType = type;
+      _showCustomSlider = false;
 
-    final suggestedMinutes = _selectedType == GoalType.dailyDuration
-        ? PrayerGoal.suggestedDailyMinutes
-        : PrayerGoal.suggestedWeeklyMinutes;
-
-    if (!suggestedMinutes.contains(state.activeGoal!.targetMinutes)) {
-      _showCustomSlider = true;
-      _customMinutes = state.activeGoal!.targetMinutes;
-    }
+      if (existingGoal != null) {
+        _selectedMinutes = existingGoal.targetMinutes;
+        final suggestedMinutes = PrayerGoal.getSuggestedMinutes(type);
+        if (!suggestedMinutes.contains(existingGoal.targetMinutes)) {
+          _showCustomSlider = true;
+          _customMinutes = existingGoal.targetMinutes;
+        }
+      } else {
+        _selectedMinutes = null;
+        _customMinutes = PrayerGoal.getDefaultCustomMinutes(type);
+      }
+    });
   }
 
   @override
@@ -58,11 +61,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
         }
       },
       builder: (context, state) {
-        _initializeFromState(state);
-
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Meta de oración'),
+            title: const Text('Metas de oración'),
           ),
           body: state.status == GoalsStatus.loading
               ? const Center(child: CircularProgressIndicator())
@@ -75,18 +76,27 @@ class _GoalsScreenState extends State<GoalsScreen> {
                       _buildHeader(context),
                       const SizedBox(height: SelahSpacing.xl),
 
-                      // Current goal display
-                      if (state.activeGoal != null) ...[
-                        _buildCurrentGoalCard(context, state),
+                      // Active goals summary
+                      if (state.hasActiveGoals) ...[
+                        _buildActiveGoalsSummary(context, state),
                         const SizedBox(height: SelahSpacing.xl),
                       ],
 
                       // Goal type selector
-                      _buildGoalTypeSelector(context),
+                      _buildGoalTypeSelector(context, state),
                       const SizedBox(height: SelahSpacing.lg),
 
                       // Goal minutes selector
                       _buildGoalSelector(context, state),
+
+                      // Daily equivalent for monthly/annual goals
+                      if (_selectedMinutes != null &&
+                          (_selectedType == GoalType.monthlyDuration ||
+                              _selectedType == GoalType.annualDuration)) ...[
+                        const SizedBox(height: SelahSpacing.md),
+                        _buildDailyEquivalent(context),
+                      ],
+
                       const SizedBox(height: SelahSpacing.xl),
 
                       // Save button
@@ -105,14 +115,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Meta de oración',
+          'Metas de oración',
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: SelahSpacing.sm),
         Text(
-          'Establece un objetivo de minutos de oración para mantener una disciplina espiritual consistente.',
+          'Puedes establecer metas diarias, semanales, mensuales y anuales para mantener una disciplina espiritual consistente.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
           ),
@@ -121,97 +131,103 @@ class _GoalsScreenState extends State<GoalsScreen> {
     );
   }
 
-  Widget _buildCurrentGoalCard(BuildContext context, GoalsState state) {
+  Widget _buildActiveGoalsSummary(BuildContext context, GoalsState state) {
     final theme = Theme.of(context);
-    final goal = state.activeGoal!;
-    final progress = state.dailyProgress;
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      padding: const EdgeInsets.all(SelahSpacing.lg),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            SelahColors.adoration,
-            SelahColors.supplication,
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tus metas activas',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.flag_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
-              const SizedBox(width: SelahSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        const SizedBox(height: SelahSpacing.md),
+        ...state.allProgress.map((progress) => Padding(
+              padding: const EdgeInsets.only(bottom: SelahSpacing.sm),
+              child: Container(
+                padding: const EdgeInsets.all(SelahSpacing.md),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: progress.isCompleted
+                        ? SelahColors.thanksgiving.withValues(alpha: 0.5)
+                        : isDark
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : Colors.black.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Row(
                   children: [
-                    Text(
-                      'Meta actual',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                    Icon(
+                      progress.isCompleted
+                          ? Icons.check_circle_rounded
+                          : Icons.flag_rounded,
+                      color: progress.isCompleted
+                          ? SelahColors.thanksgiving
+                          : SelahColors.supplication,
+                      size: 24,
+                    ),
+                    const SizedBox(width: SelahSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            progress.goal.typeDisplayName,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '${progress.progressString} - ${progress.percentageInt}%',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      goal.typeDisplayName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: SizedBox(
+                        width: 60,
+                        height: 6,
+                        child: LinearProgressIndicator(
+                          value: progress.clampedPercentage,
+                          backgroundColor: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.black.withValues(alpha: 0.1),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            progress.isCompleted
+                                ? SelahColors.thanksgiving
+                                : SelahColors.supplication,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: SelahSpacing.md),
-          Text(
-            goal.targetDisplayString,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          if (progress != null) ...[
-            const SizedBox(height: SelahSpacing.md),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress.clampedPercentage,
-                backgroundColor: Colors.white.withValues(alpha: 0.3),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                minHeight: 8,
-              ),
-            ),
-            const SizedBox(height: SelahSpacing.sm),
-            Text(
-              '${progress.progressString} - ${progress.percentageInt}%',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
-            ),
-          ],
-        ],
-      ),
+            )),
+      ],
     );
   }
 
-  Widget _buildGoalTypeSelector(BuildContext context) {
+  Widget _buildGoalTypeSelector(BuildContext context, GoalsState state) {
     final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Tipo de meta',
+          'Configurar meta',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -223,33 +239,47 @@ class _GoalsScreenState extends State<GoalsScreen> {
               child: _GoalTypeCard(
                 icon: Icons.today_rounded,
                 title: 'Diaria',
-                subtitle: 'Minutos por día',
+                subtitle: 'Por día',
                 isSelected: _selectedType == GoalType.dailyDuration,
-                onTap: () {
-                  setState(() {
-                    _selectedType = GoalType.dailyDuration;
-                    _selectedMinutes = null;
-                    _showCustomSlider = false;
-                    _customMinutes = 30;
-                  });
-                },
+                hasGoal: state.getActiveGoalByType(GoalType.dailyDuration) != null,
+                onTap: () => _onTypeSelected(GoalType.dailyDuration, state),
               ),
             ),
-            const SizedBox(width: SelahSpacing.md),
+            const SizedBox(width: SelahSpacing.sm),
             Expanded(
               child: _GoalTypeCard(
                 icon: Icons.date_range_rounded,
                 title: 'Semanal',
-                subtitle: 'Minutos por semana',
+                subtitle: 'Por semana',
                 isSelected: _selectedType == GoalType.weeklyDuration,
-                onTap: () {
-                  setState(() {
-                    _selectedType = GoalType.weeklyDuration;
-                    _selectedMinutes = null;
-                    _showCustomSlider = false;
-                    _customMinutes = 120;
-                  });
-                },
+                hasGoal: state.getActiveGoalByType(GoalType.weeklyDuration) != null,
+                onTap: () => _onTypeSelected(GoalType.weeklyDuration, state),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: SelahSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: _GoalTypeCard(
+                icon: Icons.calendar_month_rounded,
+                title: 'Mensual',
+                subtitle: 'Por mes',
+                isSelected: _selectedType == GoalType.monthlyDuration,
+                hasGoal: state.getActiveGoalByType(GoalType.monthlyDuration) != null,
+                onTap: () => _onTypeSelected(GoalType.monthlyDuration, state),
+              ),
+            ),
+            const SizedBox(width: SelahSpacing.sm),
+            Expanded(
+              child: _GoalTypeCard(
+                icon: Icons.calendar_today_rounded,
+                title: 'Anual',
+                subtitle: 'Por año',
+                isSelected: _selectedType == GoalType.annualDuration,
+                hasGoal: state.getActiveGoalByType(GoalType.annualDuration) != null,
+                onTap: () => _onTypeSelected(GoalType.annualDuration, state),
               ),
             ),
           ],
@@ -262,18 +292,35 @@ class _GoalsScreenState extends State<GoalsScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final isDaily = _selectedType == GoalType.dailyDuration;
-    final suggestedMinutes = isDaily
-        ? PrayerGoal.suggestedDailyMinutes
-        : PrayerGoal.suggestedWeeklyMinutes;
-    final maxMinutes = isDaily ? 120 : 420; // 2h daily, 7h weekly
-    final minMinutes = isDaily ? 5 : 30;
+    final suggestedMinutes = PrayerGoal.getSuggestedMinutes(_selectedType);
+    final (minMinutes, maxMinutes) = PrayerGoal.getMinMaxMinutes(_selectedType);
+
+    String periodLabel;
+    switch (_selectedType) {
+      case GoalType.dailyDuration:
+        periodLabel = 'Minutos por día';
+        break;
+      case GoalType.weeklyDuration:
+        periodLabel = 'Minutos por semana';
+        break;
+      case GoalType.monthlyDuration:
+        periodLabel = 'Horas por mes';
+        break;
+      case GoalType.annualDuration:
+        periodLabel = 'Horas por año';
+        break;
+    }
+
+    // For monthly and annual goals, slider moves in 1-hour increments
+    final bool useHourIncrements = _selectedType == GoalType.monthlyDuration ||
+                                    _selectedType == GoalType.annualDuration;
+    final int sliderStep = useHourIncrements ? 60 : 5;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          isDaily ? 'Minutos por día' : 'Minutos por semana',
+          periodLabel,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -359,11 +406,13 @@ class _GoalsScreenState extends State<GoalsScreen> {
                       ),
                   min: minMinutes.toDouble(),
                   max: maxMinutes.toDouble(),
-                  divisions: (maxMinutes - minMinutes) ~/ 5,
+                  divisions: (maxMinutes - minMinutes) ~/ sliderStep,
                   label: _formatMinutes(_customMinutes),
                   onChanged: (value) {
                     setState(() {
-                      _customMinutes = value.round();
+                      // Round to nearest step (hour for monthly/annual)
+                      _customMinutes = ((value / sliderStep).round() * sliderStep)
+                          .clamp(minMinutes, maxMinutes);
                       _selectedMinutes = _customMinutes;
                     });
                   },
@@ -395,10 +444,68 @@ class _GoalsScreenState extends State<GoalsScreen> {
     );
   }
 
+  Widget _buildDailyEquivalent(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    if (_selectedMinutes == null) return const SizedBox.shrink();
+
+    // Calculate daily equivalent
+    final int daysInPeriod =
+        _selectedType == GoalType.monthlyDuration ? 30 : 365;
+    final double dailyMinutes = _selectedMinutes! / daysInPeriod;
+
+    String dailyText;
+    if (dailyMinutes < 1) {
+      dailyText = 'menos de 1 min';
+    } else if (dailyMinutes < 60) {
+      dailyText = '${dailyMinutes.round()} min';
+    } else {
+      final hours = (dailyMinutes / 60).floor();
+      final mins = (dailyMinutes % 60).round();
+      if (mins == 0) {
+        dailyText = '$hours ${hours == 1 ? 'hora' : 'horas'}';
+      } else {
+        dailyText = '${hours}h ${mins}min';
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: SelahSpacing.md,
+        vertical: SelahSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: isDark
+            ? SelahColors.supplication.withValues(alpha: 0.15)
+            : SelahColors.supplication.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: 16,
+            color: SelahColors.supplication,
+          ),
+          const SizedBox(width: SelahSpacing.xs),
+          Text(
+            'Equivale a ~$dailyText por día',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: SelahColors.supplication,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSaveButton(BuildContext context, GoalsState state) {
+    final existingGoal = state.getActiveGoalByType(_selectedType);
     final hasChanges = _selectedMinutes != null &&
-        (_selectedMinutes != state.activeGoal?.targetMinutes ||
-            _selectedType != state.activeGoal?.type);
+        (_selectedMinutes != existingGoal?.targetMinutes);
 
     return SizedBox(
       width: double.infinity,
@@ -414,7 +521,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 ),
               )
             : const Icon(Icons.check),
-        label: Text(state.isSaving ? 'Guardando...' : 'Guardar meta'),
+        label: Text(state.isSaving
+            ? 'Guardando...'
+            : existingGoal != null
+                ? 'Actualizar meta'
+                : 'Establecer meta'),
       ),
     );
   }
@@ -427,8 +538,22 @@ class _GoalsScreenState extends State<GoalsScreen> {
           targetMinutes: _selectedMinutes!,
         );
 
-    final typeLabel =
-        _selectedType == GoalType.dailyDuration ? 'diaria' : 'semanal';
+    String typeLabel;
+    switch (_selectedType) {
+      case GoalType.dailyDuration:
+        typeLabel = 'diaria';
+        break;
+      case GoalType.weeklyDuration:
+        typeLabel = 'semanal';
+        break;
+      case GoalType.monthlyDuration:
+        typeLabel = 'mensual';
+        break;
+      case GoalType.annualDuration:
+        typeLabel = 'anual';
+        break;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -456,6 +581,7 @@ class _GoalTypeCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isSelected;
+  final bool hasGoal;
   final VoidCallback onTap;
 
   const _GoalTypeCard({
@@ -463,6 +589,7 @@ class _GoalTypeCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.isSelected,
+    required this.hasGoal,
     required this.onTap,
   });
 
@@ -494,14 +621,35 @@ class _GoalTypeCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              size: 32,
-              color: isSelected
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            Stack(
+              children: [
+                Icon(
+                  icon,
+                  size: 28,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+                if (hasGoal)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: SelahColors.thanksgiving,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: SelahSpacing.sm),
+            const SizedBox(height: SelahSpacing.xs),
             Text(
               title,
               style: theme.textTheme.titleSmall?.copyWith(
@@ -515,6 +663,7 @@ class _GoalTypeCard extends StatelessWidget {
               subtitle,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: 11,
               ),
             ),
           ],

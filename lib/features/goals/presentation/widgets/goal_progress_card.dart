@@ -20,8 +20,10 @@ class GoalProgressCard extends StatelessWidget {
         return 'Meta del día';
       case GoalType.weeklyDuration:
         return 'Meta de la semana';
-      case GoalType.sessionsPerWeek:
-        return 'Sesiones de la semana';
+      case GoalType.monthlyDuration:
+        return 'Meta del mes';
+      case GoalType.annualDuration:
+        return 'Meta del año';
     }
   }
 

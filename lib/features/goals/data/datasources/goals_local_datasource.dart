@@ -6,6 +6,8 @@ import '../models/prayer_goal_model.dart';
 abstract class GoalsLocalDataSource {
   Future<List<PrayerGoalModel>> getGoals(String userId);
   Future<PrayerGoalModel?> getActiveGoal(String userId);
+  Future<List<PrayerGoalModel>> getAllActiveGoals(String userId);
+  Future<PrayerGoalModel?> getActiveGoalByType(String userId, GoalType type);
   Future<PrayerGoalModel> getGoalById(String id);
   Future<PrayerGoalModel> createGoal(PrayerGoalModel goal);
   Future<PrayerGoalModel> updateGoal(PrayerGoalModel goal);
@@ -21,6 +23,8 @@ abstract class GoalsLocalDataSource {
     DateTime startDate,
     DateTime endDate,
   );
+  Future<bool> isCelebrationShown(String userId, String goalId, GoalType type, String periodKey);
+  Future<void> markCelebrationShown(String id, String userId, String goalId, GoalType type, String periodKey);
 }
 
 class GoalsLocalDataSourceImpl implements GoalsLocalDataSource {
@@ -30,6 +34,7 @@ class GoalsLocalDataSourceImpl implements GoalsLocalDataSource {
 
   static const String _tableName = 'prayer_goals';
   static const String _sessionsTable = 'prayer_sessions';
+  static const String _celebrationsTable = 'goal_celebrations';
 
   @override
   Future<List<PrayerGoalModel>> getGoals(String userId) async {
@@ -63,6 +68,41 @@ class GoalsLocalDataSourceImpl implements GoalsLocalDataSource {
       return PrayerGoalModel.fromMap(results.first);
     } catch (e) {
       throw CacheException(message: 'Error al obtener meta activa: $e');
+    }
+  }
+
+  @override
+  Future<List<PrayerGoalModel>> getAllActiveGoals(String userId) async {
+    try {
+      final results = await databaseHelper.query(
+        _tableName,
+        where: 'user_id = ? AND is_active = ?',
+        whereArgs: [userId, 1],
+        orderBy: 'created_at DESC',
+      );
+      return results.map((map) => PrayerGoalModel.fromMap(map)).toList();
+    } catch (e) {
+      throw CacheException(message: 'Error al obtener metas activas: $e');
+    }
+  }
+
+  @override
+  Future<PrayerGoalModel?> getActiveGoalByType(String userId, GoalType type) async {
+    try {
+      final results = await databaseHelper.query(
+        _tableName,
+        where: 'user_id = ? AND is_active = ? AND goal_type = ?',
+        whereArgs: [userId, 1, _goalTypeToString(type)],
+        limit: 1,
+      );
+
+      if (results.isEmpty) {
+        return null;
+      }
+
+      return PrayerGoalModel.fromMap(results.first);
+    } catch (e) {
+      throw CacheException(message: 'Error al obtener meta por tipo: $e');
     }
   }
 
@@ -238,8 +278,76 @@ class GoalsLocalDataSourceImpl implements GoalsLocalDataSource {
         return 'daily_duration';
       case GoalType.weeklyDuration:
         return 'weekly_duration';
-      case GoalType.sessionsPerWeek:
-        return 'sessions_per_week';
+      case GoalType.monthlyDuration:
+        return 'monthly_duration';
+      case GoalType.annualDuration:
+        return 'annual_duration';
     }
+  }
+
+  @override
+  Future<bool> isCelebrationShown(
+    String userId,
+    String goalId,
+    GoalType type,
+    String periodKey,
+  ) async {
+    try {
+      final results = await databaseHelper.query(
+        _celebrationsTable,
+        where: 'user_id = ? AND goal_id = ? AND goal_type = ? AND period_key = ?',
+        whereArgs: [userId, goalId, _goalTypeToString(type), periodKey],
+        limit: 1,
+      );
+      return results.isNotEmpty;
+    } catch (e) {
+      throw CacheException(message: 'Error al verificar celebración: $e');
+    }
+  }
+
+  @override
+  Future<void> markCelebrationShown(
+    String id,
+    String userId,
+    String goalId,
+    GoalType type,
+    String periodKey,
+  ) async {
+    try {
+      await databaseHelper.insert(_celebrationsTable, {
+        'id': id,
+        'user_id': userId,
+        'goal_id': goalId,
+        'goal_type': _goalTypeToString(type),
+        'period_key': periodKey,
+        'shown_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      throw CacheException(message: 'Error al marcar celebración: $e');
+    }
+  }
+
+  /// Helper to calculate period key for a goal type
+  static String calculatePeriodKey(GoalType type, DateTime date) {
+    switch (type) {
+      case GoalType.dailyDuration:
+        return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      case GoalType.weeklyDuration:
+        // ISO week number
+        final weekNumber = _getISOWeekNumber(date);
+        return '${date.year}-W${weekNumber.toString().padLeft(2, '0')}';
+      case GoalType.monthlyDuration:
+        return '${date.year}-${date.month.toString().padLeft(2, '0')}';
+      case GoalType.annualDuration:
+        return '${date.year}';
+    }
+  }
+
+  static int _getISOWeekNumber(DateTime date) {
+    // ISO week: week 1 is the week containing Jan 4
+    final jan4 = DateTime(date.year, 1, 4);
+    final daysSinceJan4 = date.difference(jan4).inDays;
+    final weekday = date.weekday; // 1 = Monday, 7 = Sunday
+    return ((daysSinceJan4 + jan4.weekday - weekday) / 7).floor() + 1;
   }
 }

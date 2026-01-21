@@ -22,7 +22,8 @@ class GoalsCubit extends Cubit<GoalsState> {
     emit(state.copyWith(status: GoalsStatus.loading));
 
     final goalsResult = await repository.getGoals(_userId);
-    final activeResult = await repository.getActiveGoal(_userId);
+    final activeGoalsResult = await repository.getAllActiveGoals(_userId);
+    final progressResult = await repository.getAllProgress(_userId);
 
     goalsResult.fold(
       (failure) => emit(state.copyWith(
@@ -30,29 +31,24 @@ class GoalsCubit extends Cubit<GoalsState> {
         errorMessage: failure.message,
       )),
       (goals) {
-        activeResult.fold(
+        activeGoalsResult.fold(
           (failure) => emit(state.copyWith(
             status: GoalsStatus.loaded,
             goals: goals,
             errorMessage: failure.message,
           )),
-          (activeGoal) async {
-            // Load progress based on goal type
-            final progressResult = activeGoal?.type == GoalType.weeklyDuration
-                ? await repository.getWeeklyProgress(_userId)
-                : await repository.getDailyProgress(_userId);
-
+          (activeGoals) {
             progressResult.fold(
               (failure) => emit(state.copyWith(
                 status: GoalsStatus.loaded,
                 goals: goals,
-                activeGoal: activeGoal,
+                activeGoals: activeGoals,
               )),
-              (progress) => emit(state.copyWith(
+              (allProgress) => emit(state.copyWith(
                 status: GoalsStatus.loaded,
                 goals: goals,
-                activeGoal: activeGoal,
-                dailyProgress: progress,
+                activeGoals: activeGoals,
+                allProgress: allProgress,
               )),
             );
           },
@@ -62,14 +58,11 @@ class GoalsCubit extends Cubit<GoalsState> {
   }
 
   Future<void> loadProgress() async {
-    // Load progress based on active goal type
-    final result = state.activeGoal?.type == GoalType.weeklyDuration
-        ? await repository.getWeeklyProgress(_userId)
-        : await repository.getDailyProgress(_userId);
+    final result = await repository.getAllProgress(_userId);
 
     result.fold(
       (failure) => emit(state.copyWith(errorMessage: failure.message)),
-      (progress) => emit(state.copyWith(dailyProgress: progress)),
+      (allProgress) => emit(state.copyWith(allProgress: allProgress)),
     );
   }
 
@@ -107,56 +100,21 @@ class GoalsCubit extends Cubit<GoalsState> {
           }),
         ];
 
-        emit(state.copyWith(
-          isSaving: false,
-          goals: updatedGoals,
-          activeGoal: createdGoal,
-        ));
-
-        // Reload progress with the new goal
-        await loadProgress();
-      },
-    );
-  }
-
-  Future<void> setDailyGoal(int targetMinutes) async {
-    emit(state.copyWith(isSaving: true));
-
-    final goal = PrayerGoal(
-      id: _uuid.v4(),
-      userId: _userId,
-      type: GoalType.dailyDuration,
-      targetMinutes: targetMinutes,
-      isActive: true,
-      createdAt: DateTime.now(),
-    );
-
-    final result = await repository.createGoal(goal);
-
-    result.fold(
-      (failure) => emit(state.copyWith(
-        isSaving: false,
-        errorMessage: failure.message,
-      )),
-      (createdGoal) async {
-        // Update the goals list
-        final updatedGoals = [
+        // Update active goals list
+        final updatedActiveGoals = [
           createdGoal,
-          ...state.goals.map((g) {
-            if (g.type == GoalType.dailyDuration && g.isActive) {
-              return g.copyWith(isActive: false);
-            }
-            return g;
-          }),
+          ...state.activeGoals.where((g) => g.type != type),
         ];
+        // Sort by type order: daily, weekly, monthly, annual
+        updatedActiveGoals.sort((a, b) => a.type.index.compareTo(b.type.index));
 
         emit(state.copyWith(
           isSaving: false,
           goals: updatedGoals,
-          activeGoal: createdGoal,
+          activeGoals: updatedActiveGoals,
         ));
 
-        // Reload progress with the new goal
+        // Reload all progress
         await loadProgress();
       },
     );
@@ -181,11 +139,14 @@ class GoalsCubit extends Cubit<GoalsState> {
           return g.id == updated.id ? updated : g;
         }).toList();
 
+        final updatedActiveGoals = state.activeGoals.map((g) {
+          return g.id == updated.id ? updated : g;
+        }).toList();
+
         emit(state.copyWith(
           isSaving: false,
           goals: updatedGoals,
-          activeGoal:
-              state.activeGoal?.id == updated.id ? updated : state.activeGoal,
+          activeGoals: updatedActiveGoals,
         ));
       },
     );
@@ -214,11 +175,14 @@ class GoalsCubit extends Cubit<GoalsState> {
           return g.id == updated.id ? updated : g;
         }).toList();
 
+        final updatedActiveGoals = state.activeGoals.where((g) => g.id != goalId).toList();
+        final updatedProgress = state.allProgress.where((p) => p.goal.id != goalId).toList();
+
         emit(state.copyWith(
           isSaving: false,
           goals: updatedGoals,
-          clearActiveGoal: state.activeGoal?.id == updated.id,
-          clearDailyProgress: state.activeGoal?.id == updated.id,
+          activeGoals: updatedActiveGoals,
+          allProgress: updatedProgress,
         ));
       },
     );
@@ -236,13 +200,14 @@ class GoalsCubit extends Cubit<GoalsState> {
       )),
       (_) {
         final updatedGoals = state.goals.where((g) => g.id != goalId).toList();
-        final wasActive = state.activeGoal?.id == goalId;
+        final updatedActiveGoals = state.activeGoals.where((g) => g.id != goalId).toList();
+        final updatedProgress = state.allProgress.where((p) => p.goal.id != goalId).toList();
 
         emit(state.copyWith(
           isDeleting: false,
           goals: updatedGoals,
-          clearActiveGoal: wasActive,
-          clearDailyProgress: wasActive,
+          activeGoals: updatedActiveGoals,
+          allProgress: updatedProgress,
         ));
       },
     );

@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'selah.db';
-  static const int _databaseVersion = 7;
+  static const int _databaseVersion = 8;
 
   Database? _database;
 
@@ -185,6 +185,19 @@ class DatabaseHelper {
       )
     ''');
 
+    // Tabla de celebraciones mostradas (para no repetir)
+    await db.execute('''
+      CREATE TABLE goal_celebrations (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        goal_id TEXT NOT NULL,
+        goal_type TEXT NOT NULL,
+        period_key TEXT NOT NULL,
+        shown_at TEXT NOT NULL,
+        FOREIGN KEY (goal_id) REFERENCES prayer_goals(id)
+      )
+    ''');
+
     // Crear índices para mejorar performance
     await db.execute('CREATE INDEX idx_categories_user ON categories(user_id)');
     await db.execute('CREATE INDEX idx_topics_user ON prayer_topics(user_id)');
@@ -196,6 +209,7 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_plans_user_date ON daily_plans(user_id, date)');
     await db.execute('CREATE INDEX idx_answered_user ON answered_prayers(user_id)');
     await db.execute('CREATE INDEX idx_goals_user ON prayer_goals(user_id)');
+    await db.execute('CREATE INDEX idx_celebrations_user_period ON goal_celebrations(user_id, goal_type, period_key)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -279,6 +293,22 @@ class DatabaseHelper {
         )
       ''');
       await db.execute('CREATE INDEX idx_goals_user ON prayer_goals(user_id)');
+    }
+
+    if (oldVersion < 8) {
+      // Crear tabla de celebraciones mostradas
+      await db.execute('''
+        CREATE TABLE goal_celebrations (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          goal_id TEXT NOT NULL,
+          goal_type TEXT NOT NULL,
+          period_key TEXT NOT NULL,
+          shown_at TEXT NOT NULL,
+          FOREIGN KEY (goal_id) REFERENCES prayer_goals(id)
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_celebrations_user_period ON goal_celebrations(user_id, goal_type, period_key)');
     }
   }
 
@@ -376,6 +406,7 @@ class DatabaseHelper {
       await txn.delete('prayer_sessions', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('prayer_topics', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('categories', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('goal_celebrations', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('prayer_goals', where: 'user_id = ?', whereArgs: [userId]);
     });
   }

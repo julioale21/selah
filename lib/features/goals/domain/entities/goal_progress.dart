@@ -52,12 +52,46 @@ class GoalProgress extends Equatable {
     return 'Comienza tu tiempo de oración';
   }
 
-  /// Formatted current progress string (e.g., "15/30 min")
+  /// Formatted current progress string (e.g., "15/30 min" or "2h 30m / 10h")
   String get progressString {
-    if (goal.type == GoalType.sessionsPerWeek) {
-      return '$currentMinutes/${goal.targetMinutes} sesiones';
+    // For monthly and annual goals, show in hours format
+    if (goal.type == GoalType.monthlyDuration ||
+        goal.type == GoalType.annualDuration) {
+      return '${_formatAsHours(currentMinutes)} / ${_formatAsHours(goal.targetMinutes)}';
     }
+
+    // For daily and weekly, show in minutes or hours if large
+    if (currentMinutes >= 60 || goal.targetMinutes >= 60) {
+      return '${_formatMinutes(currentMinutes)} / ${_formatMinutes(goal.targetMinutes)}';
+    }
+
     return '$currentMinutes/${goal.targetMinutes} min';
+  }
+
+  /// Format minutes as hours (e.g., 150 -> "2h 30m", 120 -> "2h")
+  String _formatAsHours(int minutes) {
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    if (hours == 0) {
+      return '${mins}m';
+    }
+    if (mins == 0) {
+      return '${hours}h';
+    }
+    return '${hours}h ${mins}m';
+  }
+
+  /// Format minutes smartly (e.g., 90 -> "1h 30m", 45 -> "45 min")
+  String _formatMinutes(int minutes) {
+    if (minutes >= 60) {
+      final hours = minutes ~/ 60;
+      final mins = minutes % 60;
+      if (mins == 0) {
+        return '${hours}h';
+      }
+      return '${hours}h ${mins}m';
+    }
+    return '$minutes min';
   }
 
   @override

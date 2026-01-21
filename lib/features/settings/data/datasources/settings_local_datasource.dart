@@ -84,9 +84,10 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
     final dailyPlans = await db.query('daily_plans', where: 'user_id = ?', whereArgs: [userId]);
     final settings = await db.query('settings', where: 'user_id = ?', whereArgs: [userId]);
     final prayerGoals = await db.query('prayer_goals', where: 'user_id = ?', whereArgs: [userId]);
+    final goalCelebrations = await db.query('goal_celebrations', where: 'user_id = ?', whereArgs: [userId]);
 
     final exportData = {
-      'version': '1.1',
+      'version': '1.2',
       'app': 'Selah',
       'exported_at': DateTime.now().toIso8601String(),
       'data': {
@@ -98,6 +99,7 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
         'daily_plans': dailyPlans,
         'settings': settings,
         'prayer_goals': prayerGoals,
+        'goal_celebrations': goalCelebrations,
       },
     };
 
@@ -193,6 +195,17 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
         for (final item in (data['prayer_goals'] as List)) {
           await txn.insert(
             'prayer_goals',
+            item as Map<String, dynamic>,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+
+      // Import goal celebrations
+      if (data['goal_celebrations'] != null) {
+        for (final item in (data['goal_celebrations'] as List)) {
+          await txn.insert(
+            'goal_celebrations',
             item as Map<String, dynamic>,
             conflictAlgorithm: ConflictAlgorithm.replace,
           );

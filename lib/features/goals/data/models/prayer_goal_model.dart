@@ -76,8 +76,10 @@ class PrayerGoalModel extends PrayerGoal {
         return GoalType.dailyDuration;
       case 'weekly_duration':
         return GoalType.weeklyDuration;
-      case 'sessions_per_week':
-        return GoalType.sessionsPerWeek;
+      case 'monthly_duration':
+        return GoalType.monthlyDuration;
+      case 'annual_duration':
+        return GoalType.annualDuration;
       default:
         return GoalType.dailyDuration;
     }
@@ -89,8 +91,10 @@ class PrayerGoalModel extends PrayerGoal {
         return 'daily_duration';
       case GoalType.weeklyDuration:
         return 'weekly_duration';
-      case GoalType.sessionsPerWeek:
-        return 'sessions_per_week';
+      case GoalType.monthlyDuration:
+        return 'monthly_duration';
+      case GoalType.annualDuration:
+        return 'annual_duration';
     }
   }
 }
