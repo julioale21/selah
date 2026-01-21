@@ -23,7 +23,6 @@ class GoalsCubit extends Cubit<GoalsState> {
 
     final goalsResult = await repository.getGoals(_userId);
     final activeResult = await repository.getActiveGoal(_userId);
-    final progressResult = await repository.getDailyProgress(_userId);
 
     goalsResult.fold(
       (failure) => emit(state.copyWith(
@@ -37,7 +36,12 @@ class GoalsCubit extends Cubit<GoalsState> {
             goals: goals,
             errorMessage: failure.message,
           )),
-          (activeGoal) {
+          (activeGoal) async {
+            // Load progress based on goal type
+            final progressResult = activeGoal?.type == GoalType.weeklyDuration
+                ? await repository.getWeeklyProgress(_userId)
+                : await repository.getDailyProgress(_userId);
+
             progressResult.fold(
               (failure) => emit(state.copyWith(
                 status: GoalsStatus.loaded,
@@ -58,11 +62,60 @@ class GoalsCubit extends Cubit<GoalsState> {
   }
 
   Future<void> loadProgress() async {
-    final result = await repository.getDailyProgress(_userId);
+    // Load progress based on active goal type
+    final result = state.activeGoal?.type == GoalType.weeklyDuration
+        ? await repository.getWeeklyProgress(_userId)
+        : await repository.getDailyProgress(_userId);
 
     result.fold(
       (failure) => emit(state.copyWith(errorMessage: failure.message)),
       (progress) => emit(state.copyWith(dailyProgress: progress)),
+    );
+  }
+
+  Future<void> setGoal({
+    required GoalType type,
+    required int targetMinutes,
+  }) async {
+    emit(state.copyWith(isSaving: true));
+
+    final goal = PrayerGoal(
+      id: _uuid.v4(),
+      userId: _userId,
+      type: type,
+      targetMinutes: targetMinutes,
+      isActive: true,
+      createdAt: DateTime.now(),
+    );
+
+    final result = await repository.createGoal(goal);
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        isSaving: false,
+        errorMessage: failure.message,
+      )),
+      (createdGoal) async {
+        // Update the goals list - deactivate other goals of the same type
+        final updatedGoals = [
+          createdGoal,
+          ...state.goals.map((g) {
+            if (g.type == type && g.isActive) {
+              return g.copyWith(isActive: false);
+            }
+            return g;
+          }),
+        ];
+
+        emit(state.copyWith(
+          isSaving: false,
+          goals: updatedGoals,
+          activeGoal: createdGoal,
+        ));
+
+        // Reload progress with the new goal
+        await loadProgress();
+      },
     );
   }
 

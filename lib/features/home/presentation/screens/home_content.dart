@@ -11,6 +11,7 @@ import '../../../../core/services/user_service.dart';
 import '../../../../injection_container.dart';
 import '../../../bible/domain/repositories/verse_repository.dart';
 import '../../../goals/domain/entities/goal_progress.dart';
+import '../../../goals/domain/entities/prayer_goal.dart';
 import '../../../goals/domain/repositories/goals_repository.dart';
 import '../../../goals/presentation/widgets/goal_celebration_dialog.dart';
 import '../../../goals/presentation/widgets/goal_progress_card.dart';
@@ -91,8 +92,19 @@ class _HomeContentState extends State<HomeContent> with WidgetsBindingObserver {
       final goalsRepo = sl<GoalsRepository>();
       final userId = sl<UserService>().currentUserId;
 
-      // Get the daily progress (includes goal info)
-      final result = await goalsRepo.getDailyProgress(userId);
+      // First get the active goal to determine its type
+      final activeGoalResult = await goalsRepo.getActiveGoal(userId);
+      PrayerGoal? activeGoal;
+      activeGoalResult.fold(
+        (failure) {},
+        (goal) => activeGoal = goal,
+      );
+
+      // Load progress based on goal type
+      final result = activeGoal?.type == GoalType.weeklyDuration
+          ? await goalsRepo.getWeeklyProgress(userId)
+          : await goalsRepo.getDailyProgress(userId);
+
       result.fold(
         (failure) {},
         (progress) {
@@ -767,7 +779,7 @@ class _SetGoalCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Establece tu meta diaria',
+                    'Establece tu meta de oración',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.white : Colors.black87,
@@ -775,7 +787,7 @@ class _SetGoalCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Define minutos de oración por día',
+                    'Define minutos de oración diarios o semanales',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: isDark ? Colors.white54 : Colors.black45,
                     ),

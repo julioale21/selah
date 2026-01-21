@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:selah_ui_kit/selah_ui_kit.dart';
 
 import '../../domain/entities/goal_progress.dart';
+import '../../domain/entities/prayer_goal.dart';
 
 class GoalProgressCard extends StatelessWidget {
   final GoalProgress progress;
@@ -12,6 +13,17 @@ class GoalProgressCard extends StatelessWidget {
     required this.progress,
     this.onTap,
   });
+
+  String get _goalLabel {
+    switch (progress.goal.type) {
+      case GoalType.dailyDuration:
+        return 'Meta del día';
+      case GoalType.weeklyDuration:
+        return 'Meta de la semana';
+      case GoalType.sessionsPerWeek:
+        return 'Sesiones de la semana';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +89,7 @@ class GoalProgressCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Meta del día',
+                        _goalLabel,
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: isDark ? Colors.white : Colors.black87,

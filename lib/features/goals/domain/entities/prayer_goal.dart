@@ -86,4 +86,7 @@ class PrayerGoal extends Equatable {
 
   /// Predefined goal options for quick selection (in minutes)
   static const List<int> suggestedDailyMinutes = [15, 20, 30, 45, 60];
+
+  /// Predefined weekly goal options (in minutes)
+  static const List<int> suggestedWeeklyMinutes = [60, 90, 120, 180, 300];
 }
