@@ -798,7 +798,7 @@ class _SetGoalCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Define minutos de oración diarios o semanales',
+                    'Define metas diarias, semanales, mensuales o anuales',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: isDark ? Colors.white54 : Colors.black45,
                     ),

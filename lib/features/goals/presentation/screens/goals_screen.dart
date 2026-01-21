@@ -197,7 +197,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: SizedBox(
-                        width: 60,
+                        width: 50,
                         height: 6,
                         child: LinearProgressIndicator(
                           value: progress.clampedPercentage,
@@ -209,6 +209,23 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                 ? SelahColors.thanksgiving
                                 : SelahColors.supplication,
                           ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: SelahSpacing.sm),
+                    // Delete button
+                    GestureDetector(
+                      onTap: () => _showDeleteConfirmation(context, progress.goal.id, progress.goal.typeDisplayName),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 16,
+                          color: Colors.red.withValues(alpha: 0.7),
                         ),
                       ),
                     ),
@@ -507,25 +524,92 @@ class _GoalsScreenState extends State<GoalsScreen> {
     final hasChanges = _selectedMinutes != null &&
         (_selectedMinutes != existingGoal?.targetMinutes);
 
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: hasChanges && !state.isSaving ? () => _saveGoal(context) : null,
-        icon: state.isSaving
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+    return Column(
+      children: [
+        // Save/Update button
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: hasChanges && !state.isSaving ? () => _saveGoal(context) : null,
+            icon: state.isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.check),
+            label: Text(state.isSaving
+                ? 'Guardando...'
+                : existingGoal != null
+                    ? 'Actualizar meta'
+                    : 'Establecer meta'),
+          ),
+        ),
+
+        // Delete button (only if there's an existing goal)
+        if (existingGoal != null) ...[
+          const SizedBox(height: SelahSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: state.isSaving
+                  ? null
+                  : () => _showDeleteConfirmation(
+                        context,
+                        existingGoal.id,
+                        existingGoal.typeDisplayName,
+                      ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: BorderSide(color: Colors.red.withValues(alpha: 0.5)),
+              ),
+              icon: const Icon(Icons.delete_outline_rounded),
+              label: const Text('Eliminar esta meta'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String goalId, String goalName) {
+    final theme = Theme.of(context);
+    final cubit = context.read<GoalsCubit>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminar meta'),
+        content: Text('¿Estás seguro de que quieres eliminar la "$goalName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              cubit.deactivateGoal(goalId);
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(
+                  content: Text('Meta eliminada'),
+                  backgroundColor: Colors.orange,
                 ),
-              )
-            : const Icon(Icons.check),
-        label: Text(state.isSaving
-            ? 'Guardando...'
-            : existingGoal != null
-                ? 'Actualizar meta'
-                : 'Establecer meta'),
+              );
+            },
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
       ),
     );
   }
