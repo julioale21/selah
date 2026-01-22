@@ -191,28 +191,41 @@ class _PrayerSessionScreenState extends State<PrayerSessionScreen>
                       ],
                     ],
                   ),
-                  body: SafeArea(
-                    child: Column(
-                      children: [
-                        // ACTS Progress indicator
-                        if (!state.isSummary)
-                          ACTSPhaseIndicator(
-                            currentPhase: state.phase,
-                            onPhaseTap: (phase) {
+                  body: GestureDetector(
+                    onHorizontalDragEnd: !state.isSummary
+                        ? (details) {
+                            // Swipe left or right to toggle focus mode
+                            if (details.primaryVelocity != null &&
+                                details.primaryVelocity!.abs() > 300) {
                               context
                                   .read<PrayerSessionCubit>()
-                                  .goToPhase(phase);
-                            },
+                                  .toggleFocusMode();
+                            }
+                          }
+                        : null,
+                    child: SafeArea(
+                      child: Column(
+                        children: [
+                          // ACTS Progress indicator
+                          if (!state.isSummary)
+                            ACTSPhaseIndicator(
+                              currentPhase: state.phase,
+                              onPhaseTap: (phase) {
+                                context
+                                    .read<PrayerSessionCubit>()
+                                    .goToPhase(phase);
+                              },
+                            ),
+
+                          // Main content
+                          Expanded(
+                            child: _buildPhaseContent(context, state),
                           ),
 
-                        // Main content
-                        Expanded(
-                          child: _buildPhaseContent(context, state),
-                        ),
-
-                        // Navigation buttons
-                        _buildNavigationBar(context, state),
-                      ],
+                          // Navigation buttons
+                          _buildNavigationBar(context, state),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -150,19 +150,16 @@ class _FocusModeViewState extends State<FocusModeView> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 100), // Above bottom menu
-        child: FloatingActionButton.small(
-          onPressed: () => _showAddNoteDialog(context, phaseColor),
-          backgroundColor: phaseColor.withValues(alpha: 0.9),
-          foregroundColor: isDark ? Colors.black87 : Colors.white,
-          tooltip: 'Agregar nota',
-          child: const Icon(Icons.edit_note),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: SafeArea(
-        child: Stack(
+      body: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          // Swipe left or right to exit focus mode
+          if (details.primaryVelocity != null &&
+              details.primaryVelocity!.abs() > 300) {
+            widget.onExit();
+          }
+        },
+        child: SafeArea(
+          child: Stack(
           children: [
             // Subtle gradient accent
             Positioned(
@@ -202,121 +199,124 @@ class _FocusModeViewState extends State<FocusModeView> {
               ),
             ),
 
-            // Main content with fixed header and footer
-            Column(
-              children: [
-                // Fixed Header with exit button
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: SelahSpacing.md,
-                    vertical: SelahSpacing.sm,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Timer small
-                      BlocBuilder<SessionTimerCubit, SessionTimerState>(
-                        builder: (context, timerState) {
-                          return _SmallTimer(
-                            elapsedSeconds: timerState.elapsedSeconds,
-                            isDark: isDark,
-                          );
-                        },
-                      ),
-                      // Exit button
-                      IconButton(
-                        icon: Icon(
-                          Icons.close,
-                          color: subtleTextColor,
-                        ),
-                        onPressed: widget.onExit,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Scrollable content area
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
+            // Main scrollable content
+            SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  // Header with exit button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: SelahSpacing.md,
+                      vertical: SelahSpacing.sm,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const SizedBox(height: SelahSpacing.xl),
-
-                        // Phase label with elegant styling
-                        _PhaseChip(phase: state.phase, color: phaseColor),
-
-                        const SizedBox(height: SelahSpacing.xxl),
-
-                        // Large timer - centered and prominent
+                        // Timer small
                         BlocBuilder<SessionTimerCubit, SessionTimerState>(
                           builder: (context, timerState) {
-                            return _LargeTimer(
+                            return _SmallTimer(
                               elapsedSeconds: timerState.elapsedSeconds,
-                              textColor: textColor,
+                              isDark: isDark,
                             );
                           },
                         ),
-
-                        const SizedBox(height: SelahSpacing.xxl),
-
-                        // Current topic - only show in Supplication phase
-                        if (state.isSupplication && state.currentTopic != null)
-                          _TopicDisplay(
-                            topic: state.currentTopic!,
-                            currentIndex: state.currentTopicIndex,
-                            totalTopics: state.selectedTopics.length,
-                            phaseColor: phaseColor,
-                            textColor: textColor,
-                            subtleTextColor: subtleTextColor,
-                          ),
-
-                        const SizedBox(height: SelahSpacing.xxl),
-
-                        // Verse card
-                        if (state.currentVerse != null)
-                          _VerseCard(
-                            verse: state.currentVerse!,
-                            phaseColor: phaseColor,
-                            isDark: isDark,
-                            onRefresh: () =>
-                                context.read<PrayerSessionCubit>().refreshVerse(),
-                          ),
-
-                        const SizedBox(height: SelahSpacing.xl),
+                        // Action buttons
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Add note button
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit_note,
+                                color: phaseColor,
+                              ),
+                              onPressed: () => _showAddNoteDialog(context, phaseColor),
+                              tooltip: 'Agregar nota',
+                            ),
+                            // Exit button
+                            IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                color: subtleTextColor,
+                              ),
+                              onPressed: widget.onExit,
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                ),
 
-                // Fixed bottom section
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Phase dots
-                    _PhaseDots(
-                      currentPhase: state.phase,
-                      onPhaseTap: (phase) {
-                        context.read<PrayerSessionCubit>().goToPhase(phase);
-                      },
+                  const SizedBox(height: SelahSpacing.xl),
+
+                  // Phase label with elegant styling
+                  _PhaseChip(phase: state.phase, color: phaseColor),
+
+                  const SizedBox(height: SelahSpacing.xxl),
+
+                  // Large timer - centered and prominent
+                  BlocBuilder<SessionTimerCubit, SessionTimerState>(
+                    builder: (context, timerState) {
+                      return _LargeTimer(
+                        elapsedSeconds: timerState.elapsedSeconds,
+                        textColor: textColor,
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: SelahSpacing.xxl),
+
+                  // Current topic - only show in Supplication phase
+                  if (state.isSupplication && state.currentTopic != null)
+                    _TopicDisplay(
+                      topic: state.currentTopic!,
+                      currentIndex: state.currentTopicIndex,
+                      totalTopics: state.selectedTopics.length,
+                      phaseColor: phaseColor,
+                      textColor: textColor,
+                      subtleTextColor: subtleTextColor,
                     ),
 
-                    const SizedBox(height: SelahSpacing.lg),
+                  const SizedBox(height: SelahSpacing.xxl),
 
-                    // Navigation
-                    _NavigationBar(
-                      state: state,
+                  // Verse card
+                  if (state.currentVerse != null)
+                    _VerseCard(
+                      verse: state.currentVerse!,
                       phaseColor: phaseColor,
                       isDark: isDark,
+                      onRefresh: () =>
+                          context.read<PrayerSessionCubit>().refreshVerse(),
                     ),
 
-                    // Extra padding for bottom menu
-                    const SizedBox(height: SelahSpacing.xxl + SelahSpacing.xl),
-                  ],
-                ),
-              ],
+                  const SizedBox(height: SelahSpacing.xxl),
+
+                  // Phase dots
+                  _PhaseDots(
+                    currentPhase: state.phase,
+                    onPhaseTap: (phase) {
+                      context.read<PrayerSessionCubit>().goToPhase(phase);
+                    },
+                  ),
+
+                  const SizedBox(height: SelahSpacing.lg),
+
+                  // Navigation
+                  _NavigationBar(
+                    state: state,
+                    phaseColor: phaseColor,
+                    isDark: isDark,
+                  ),
+
+                  // Extra padding for bottom menu
+                  const SizedBox(height: SelahSpacing.xxl + SelahSpacing.xl),
+                ],
+              ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -701,8 +701,11 @@ class _NavigationBar extends StatelessWidget {
     final isAtEnd = state.isSupplication &&
         (state.selectedTopics.isEmpty || isLastTopicInSupplication);
 
-    // Determine next label
-    String nextLabel = isAtEnd ? 'Amén' : 'Siguiente';
+    void finishSession() {
+      cubit.finishSession(timerCubit.state.elapsedSeconds);
+      timerCubit.finish();
+      cubit.exitFocusMode();
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: SelahSpacing.xl),
@@ -722,27 +725,20 @@ class _NavigationBar extends StatelessWidget {
                   ),
           ),
 
-          // Next/Amén button
-          if (isAtEnd)
-            FilledButton.icon(
-              onPressed: () {
-                cubit.finishSession(timerCubit.state.elapsedSeconds);
-                timerCubit.finish();
-                cubit.exitFocusMode();
-              },
-              icon: const Icon(Icons.check, size: 18),
-              label: Text(nextLabel),
-              style: FilledButton.styleFrom(
-                backgroundColor: phaseColor,
-                foregroundColor: buttonForeground,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: SelahSpacing.lg,
-                  vertical: SelahSpacing.sm,
-                ),
+          // Amén button - always visible
+          FilledButton.icon(
+            onPressed: finishSession,
+            icon: const Icon(Icons.check, size: 18),
+            label: const Text('Amén'),
+            style: FilledButton.styleFrom(
+              backgroundColor: phaseColor,
+              foregroundColor: buttonForeground,
+              padding: const EdgeInsets.symmetric(
+                horizontal: SelahSpacing.lg,
+                vertical: SelahSpacing.sm,
               ),
-            )
-          else
-            const SizedBox(width: 80),
+            ),
+          ),
 
           // Next button (when not at end)
           Expanded(
