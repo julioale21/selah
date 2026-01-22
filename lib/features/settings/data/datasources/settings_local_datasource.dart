@@ -108,9 +108,18 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
 
   @override
   Future<void> importData(String jsonData) async {
-    final importData = json.decode(jsonData) as Map<String, dynamic>;
-    final data = importData['data'] as Map<String, dynamic>;
-    final db = await databaseHelper.database;
+    try {
+      final importData = json.decode(jsonData) as Map<String, dynamic>;
+
+      if (importData['data'] == null) {
+        throw Exception('Formato de archivo inválido: falta el campo "data"');
+      }
+
+      final data = importData['data'] as Map<String, dynamic>;
+      final db = await databaseHelper.database;
+
+      final version = importData['version'] ?? 'desconocida';
+      print('Importando datos versión: $version');
 
     await db.transaction((txn) async {
       // Import categories
@@ -212,6 +221,12 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
         }
       }
     });
+
+      print('Importación completada exitosamente');
+    } catch (e) {
+      print('Error durante la importación: $e');
+      rethrow;
+    }
   }
 
   @override
